@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.entity.MoCEntityTameableAnimal;
-import com.ferreusveritas.mocreatures.entity.passive.EntityManticorePet;
 import com.ferreusveritas.mocreatures.entity.passive.EntityWyvern;
 import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
 import com.ferreusveritas.mocreatures.network.MoCMessageHandler;
 import com.ferreusveritas.mocreatures.network.message.MoCMessageAppear;
-import com.ferreusveritas.mocreatures.MoCTools;
+
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -68,13 +68,9 @@ public class CommandMoCSpawn extends CommandBase {
             }
 
             String playername = sender.getName();
-            EntityPlayerMP player =
-                    FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerByUsername(playername);
+            EntityPlayerMP player = FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerByUsername(playername);
             MoCEntityTameableAnimal specialEntity = null;
-            if (entityType.equalsIgnoreCase("manticore")) {
-                specialEntity = new EntityManticorePet(player.world);
-                specialEntity.setAdult(true);
-            } else if (entityType.equalsIgnoreCase("wyvern")) {
+            if (entityType.equalsIgnoreCase("wyvern")) {
                 specialEntity = new EntityWyvern(player.world);
                 specialEntity.setAdult(false);
             } else {

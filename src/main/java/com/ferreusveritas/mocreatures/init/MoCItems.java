@@ -51,31 +51,14 @@ public class MoCItems {
 	public static final MoCItem hideCroc = new MoCItem("reptilehide");
 	public static final MoCItem fur = new MoCItem("fur");
 
-	public static final MoCItem essencedarkness = new MoCItem("essencedarkness");
-	public static final MoCItem essencefire = new MoCItem("essencefire");
-	public static final MoCItem essenceundead = new MoCItem("essenceundead");
-	public static final MoCItem essencelight = new MoCItem("essencelight");
-
 	public static final MoCItem fishnet = new MoCItemPetAmulet("fishnet");
 	public static final MoCItem fishnetfull = new MoCItemPetAmulet("fishnetfull");
 	public static final MoCItem petamulet = new MoCItemPetAmulet("petamulet", 1);
 	public static final MoCItem petamuletfull = new MoCItemPetAmulet("petamuletfull", 1);
 
-	public static final MoCItem heartdarkness = new MoCItem("heartdarkness");
-	public static final MoCItem heartfire = new MoCItem("heartfire");
-	public static final MoCItem heartundead = new MoCItem("heartundead");
-
 	public static final MoCItem animalHide = new MoCItem("hide");
-	public static final MoCItem chitinCave = new MoCItem("chitinblack");
-	public static final MoCItem chitinFrost = new MoCItem("chitinfrost");
-	public static final MoCItem chitinNether = new MoCItem("chitinnether");
-	public static final MoCItem chitin = new MoCItem("chitin");
 
 	// Weapons
-	public static final MoCItemWeapon scorpStingCave = new MoCItemWeapon("scorpstingcave", ToolMaterial.GOLD, 4, true);
-	public static final MoCItemWeapon scorpStingFrost = new MoCItemWeapon("scorpstingfrost", ToolMaterial.GOLD, 2, true);
-	public static final MoCItemWeapon scorpStingNether = new MoCItemWeapon("scorpstingnether", ToolMaterial.GOLD, 3, true);
-	public static final MoCItemWeapon scorpStingDirt = new MoCItemWeapon("scorpstingdirt", ToolMaterial.GOLD, 1, true);
 
 	public static final MoCItemWeapon tusksWood = new MoCItemWeapon("tuskswood", ToolMaterial.WOOD);
 	public static final MoCItemWeapon tusksIron = new MoCItemWeapon("tusksiron", ToolMaterial.IRON);
@@ -96,26 +79,6 @@ public class MoCItems {
 	public static final MoCItemArmor helmetHide = new MoCItemArmor("hidehelmet", hideARMOR, 4, EntityEquipmentSlot.HEAD);
 	public static final MoCItemArmor legsHide = new MoCItemArmor("hidelegs", hideARMOR, 4, EntityEquipmentSlot.LEGS);
 	public static final MoCItemArmor bootsHide = new MoCItemArmor("hideboots", hideARMOR, 4, EntityEquipmentSlot.FEET);
-
-	public static final MoCItemArmor scorpPlateDirt = new MoCItemArmor("scorpplatedirt", scorpARMOR, 4, EntityEquipmentSlot.CHEST);
-	public static final MoCItemArmor scorpHelmetDirt = new MoCItemArmor("scorphelmetdirt", scorpARMOR, 4, EntityEquipmentSlot.HEAD);
-	public static final MoCItemArmor scorpLegsDirt = new MoCItemArmor("scorplegsdirt", scorpARMOR, 4, EntityEquipmentSlot.LEGS);
-	public static final MoCItemArmor scorpBootsDirt = new MoCItemArmor("scorpbootsdirt", scorpARMOR, 4, EntityEquipmentSlot.FEET);
-
-	public static final MoCItemArmor scorpPlateFrost = new MoCItemArmor("scorpplatefrost", scorpARMOR, 4, EntityEquipmentSlot.CHEST);
-	public static final MoCItemArmor scorpHelmetFrost = new MoCItemArmor("scorphelmetfrost", scorpARMOR, 4, EntityEquipmentSlot.HEAD);
-	public static final MoCItemArmor scorpLegsFrost = new MoCItemArmor("scorplegsfrost", scorpARMOR, 4, EntityEquipmentSlot.LEGS);
-	public static final MoCItemArmor scorpBootsFrost = new MoCItemArmor("scorpbootsfrost", scorpARMOR, 4, EntityEquipmentSlot.FEET);
-
-	public static final MoCItemArmor scorpPlateCave = new MoCItemArmor("scorpplatecave", scorpARMOR, 4, EntityEquipmentSlot.CHEST);
-	public static final MoCItemArmor scorpHelmetCave = new MoCItemArmor("scorphelmetcave", scorpARMOR, 4, EntityEquipmentSlot.HEAD);
-	public static final MoCItemArmor scorpLegsCave = new MoCItemArmor("scorplegscave", scorpARMOR, 4, EntityEquipmentSlot.LEGS);
-	public static final MoCItemArmor scorpBootsCave = new MoCItemArmor("scorpbootscave", scorpARMOR, 4, EntityEquipmentSlot.FEET);
-
-	public static final MoCItemArmor scorpPlateNether = new MoCItemArmor("scorpplatenether", scorpARMOR, 4, EntityEquipmentSlot.CHEST);
-	public static final MoCItemArmor scorpHelmetNether = new MoCItemArmor("scorphelmetnether", scorpARMOR, 4, EntityEquipmentSlot.HEAD);
-	public static final MoCItemArmor scorpLegsNether = new MoCItemArmor("scorplegsnether", scorpARMOR, 4, EntityEquipmentSlot.LEGS);
-	public static final MoCItemArmor scorpBootsNether = new MoCItemArmor("scorpbootsnether", scorpARMOR, 4, EntityEquipmentSlot.FEET);
 
 	public static final MoCItem elephantHarness = new MoCItem("elephantharness");
 	public static final MoCItem elephantChest = new MoCItem("elephantchest");
@@ -151,11 +114,6 @@ public class MoCItems {
 					bootsCroc,
 					fur,
 
-					essencedarkness,
-					essencefire,
-					essenceundead,
-					essencelight,
-
 					fishnet,
 					fishnetfull,
 					petamulet,
@@ -166,42 +124,11 @@ public class MoCItems {
 					legsFur,
 					bootsFur,
 
-					heartdarkness,
-					heartfire,
-					heartundead,
-
 					animalHide,
 					chestHide,
 					helmetHide,
 					legsHide,
 					bootsHide,
-
-					chitinCave,
-					chitinFrost,
-					chitinNether,
-					chitin,
-
-					scorpPlateDirt,
-					scorpHelmetDirt,
-					scorpLegsDirt,
-					scorpBootsDirt,
-					scorpPlateFrost,
-					scorpHelmetFrost,
-					scorpLegsFrost,
-					scorpBootsFrost,
-					scorpPlateNether,
-					scorpHelmetNether,
-					scorpLegsNether,
-					scorpBootsNether,
-					scorpHelmetCave,
-					scorpPlateCave,
-					scorpLegsCave,
-					scorpBootsCave,
-
-					scorpStingDirt,
-					scorpStingFrost,
-					scorpStingCave,
-					scorpStingNether,
 
 					tusksWood,
 					tusksIron,

@@ -3,16 +3,14 @@ package com.ferreusveritas.mocreatures.entity.item;
 import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.MoCreatures;
 import com.ferreusveritas.mocreatures.entity.MoCEntityTameableAquatic;
-import com.ferreusveritas.mocreatures.entity.aquatic.EnumEgg;
 import com.ferreusveritas.mocreatures.entity.aquatic.EntityMediumFish;
 import com.ferreusveritas.mocreatures.entity.aquatic.EntityPiranha;
 import com.ferreusveritas.mocreatures.entity.aquatic.EntityShark;
 import com.ferreusveritas.mocreatures.entity.aquatic.EntitySmallFish;
+import com.ferreusveritas.mocreatures.entity.aquatic.EnumEgg;
 import com.ferreusveritas.mocreatures.entity.monster.EntityScorpion;
 import com.ferreusveritas.mocreatures.entity.monster.EntityScorpion.ScorpionType;
 import com.ferreusveritas.mocreatures.entity.passive.EntityKomodo;
-import com.ferreusveritas.mocreatures.entity.passive.EntityManticorePet;
-import com.ferreusveritas.mocreatures.entity.passive.EntityManticorePet.ManticoreType;
 import com.ferreusveritas.mocreatures.entity.passive.EntityOstrich;
 import com.ferreusveritas.mocreatures.entity.passive.EntityOstrich.OstrichType;
 import com.ferreusveritas.mocreatures.entity.passive.EntityPetScorpion;
@@ -227,13 +225,9 @@ public class MoCEntityEgg extends EntityLiving {
 
 						
 						case OstrichWild:
-						case OstrichStolen:
-						case OstrichNether: {
+						case OstrichStolen: {
 							EntityOstrich entityspawn = new EntityOstrich(this.world);
 							OstrichType type = OstrichType.Chick;
-							if (this.world.provider.doesWaterVaporize() || egg == EnumEgg.OstrichNether) {
-								type = OstrichType.Nether;
-							}
 							entityspawn.setPosition(this.posX, this.posY, this.posZ);
 							entityspawn.setType(type);
 							entityspawn.setEdad(35);
@@ -308,25 +302,6 @@ public class MoCEntityEgg extends EntityLiving {
 						}
 						break;
 						
-						case ManticoreCommon:
-						case ManticoreDark:
-						case ManticoreBlue:
-						case ManticoreGreen: {
-							EntityManticorePet entityspawn = new EntityManticorePet(this.world);
-							ManticoreType type = EntityManticorePet.getManticore(egg);
-							entityspawn.setPosition(this.posX, this.posY, this.posZ);
-							entityspawn.setType(type);
-							entityspawn.setAdult(false);
-							entityspawn.setEdad(30);
-							this.world.spawnEntity(entityspawn);
-							entityspawn.setHealth(entityspawn.getMaxHealth());
-							EntityPlayer entityplayer = this.world.getClosestPlayerToEntity(this, 24D);
-							if (entityplayer != null) {
-								MoCTools.tameWithName(entityplayer, entityspawn);
-							}
-						}
-						break;
-							
 						default:
 					}
 					

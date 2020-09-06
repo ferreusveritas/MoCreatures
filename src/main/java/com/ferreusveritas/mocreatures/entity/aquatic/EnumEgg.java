@@ -22,7 +22,6 @@ public enum EnumEgg {
 	
 	OstrichWild(30),
 	OstrichStolen(31),
-	OstrichNether(32),
 	
 	Komodo(33),
 	
@@ -44,11 +43,6 @@ public enum EnumEgg {
 	WyvernCave(59),
 	WyvernMountain(60),
 	WyvernSea(61),
-	
-	ManticoreCommon(62),
-	ManticoreDark(63),
-	ManticoreBlue(64),
-	ManticoreGreen(65),
 	
 	//Medium Fish
 	Salmon(70),

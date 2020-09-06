@@ -10,7 +10,6 @@ import com.ferreusveritas.mocreatures.entity.ai.EntityAIFleeFromPlayer;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAINearestAttackableTargetMoC;
 import com.ferreusveritas.mocreatures.entity.aquatic.EnumEgg;
 import com.ferreusveritas.mocreatures.entity.passive.EntityPetScorpion;
-import com.ferreusveritas.mocreatures.init.MoCItems;
 import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
 import com.ferreusveritas.mocreatures.network.MoCMessageHandler;
 import com.ferreusveritas.mocreatures.network.message.MoCMessageAnimation;
@@ -359,33 +358,8 @@ public class EntityScorpion extends MoCEntityMob {
 		if (!getIsAdult()) {
 			return Items.STRING;
 		}
-
-		boolean doDrops = (this.rand.nextInt(100) < MoCreatures.proxy.rareItemDropChance);
-
-		switch (getScorpion()) {
-			case Dirt:
-				if (doDrops) {
-					return MoCItems.scorpStingDirt;
-				}
-				return MoCItems.chitin;
-			case Cave:
-				if (doDrops) {
-					return MoCItems.scorpStingCave;
-				}
-				return MoCItems.chitinCave;
-			case Nether:
-				if (doDrops) {
-					return MoCItems.scorpStingNether;
-				}
-				return MoCItems.chitinNether;
-			case Frost:
-				if (doDrops) {
-					return MoCItems.scorpStingFrost;
-				}
-				return MoCItems.chitinFrost;
-			default:
-				return Items.STRING;
-		}
+		
+		return null;
 	}
 
 	@Override

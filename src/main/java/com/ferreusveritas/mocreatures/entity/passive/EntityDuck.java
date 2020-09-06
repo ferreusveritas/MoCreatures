@@ -48,7 +48,7 @@ public class EntityDuck extends MoCEntityAnimal//EntityChicken
 
     @Override
     protected SoundEvent getDeathSound() {
-        return MoCSoundEvents.ENTITY_DUCK_DEATH;
+        return MoCSoundEvents.ENTITY_DUCK_HURT;
     }
 
     @Override

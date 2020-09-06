@@ -7,7 +7,6 @@ import com.ferreusveritas.mocreatures.entity.ai.EntityAIFleeFromPlayer;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIFollowOwnerPlayer;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIHunt;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
-import com.ferreusveritas.mocreatures.entity.item.MoCEntityEgg;
 import com.ferreusveritas.mocreatures.entity.monster.EntityScorpion;
 import com.ferreusveritas.mocreatures.entity.monster.EntityScorpion.ScorpionType;
 import com.ferreusveritas.mocreatures.init.MoCItems;
@@ -344,35 +343,7 @@ public class EntityPetScorpion extends MoCEntityTameableAnimal {
 			return Items.STRING;
 		}
 
-		boolean doDrops = (this.rand.nextInt(100) < MoCreatures.proxy.rareItemDropChance);
-
-		switch (getScorpion()) {
-			case Dirt:
-				if (doDrops) {
-					return MoCItems.scorpStingDirt;
-				}
-				return MoCItems.chitin;
-			case Cave:
-				if (doDrops) {
-					return MoCItems.scorpStingCave;
-				}
-				return MoCItems.chitinCave;
-			case Nether:
-				if (doDrops) {
-					return MoCItems.scorpStingNether;
-				}
-				return MoCItems.chitinNether;
-			case Frost:
-				if (doDrops) {
-					return MoCItems.scorpStingFrost;
-				}
-				return MoCItems.chitinFrost;
-			case Undead:
-				return Items.ROTTEN_FLESH;
-
-			default:
-				return Items.STRING;
-		}
+		return Items.AIR;
 	}
 
 	@Override
@@ -395,37 +366,6 @@ public class EntityPetScorpion extends MoCEntityTameableAnimal {
 
 		if (!stack.isEmpty() && (stack.getItem() == MoCItems.whip) && getIsTamed() && (!this.isBeingRidden())) {
 			setSitting(!getIsSitting());
-			return true;
-		}
-
-		if (!stack.isEmpty() && this.getIsTamed() && stack.getItem() == MoCItems.essenceundead) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, new ItemStack(Items.GLASS_BOTTLE));
-			} else {
-				player.inventory.addItemStackToInventory(new ItemStack(Items.GLASS_BOTTLE));
-			}
-			transform(5);
-			return true;
-		}
-
-		if (!stack.isEmpty() && this.getIsTamed() && stack.getItem() == MoCItems.essencedarkness) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, new ItemStack(Items.GLASS_BOTTLE));
-			} else {
-				player.inventory.addItemStackToInventory(new ItemStack(Items.GLASS_BOTTLE));
-			}
-			this.setHealth(getMaxHealth());
-			if (!this.world.isRemote) {
-				int i = getType() + 40;
-				MoCEntityEgg entityegg = new MoCEntityEgg(this.world, i);
-				entityegg.setPosition(player.posX, player.posY, player.posZ);
-				player.world.spawnEntity(entityegg);
-				entityegg.motionY += this.world.rand.nextFloat() * 0.05F;
-				entityegg.motionX += (this.world.rand.nextFloat() - this.world.rand.nextFloat()) * 0.3F;
-				entityegg.motionZ += (this.world.rand.nextFloat() - this.world.rand.nextFloat()) * 0.3F;
-			}
 			return true;
 		}
 

@@ -10,7 +10,6 @@ import com.ferreusveritas.mocreatures.entity.ai.EntityAIHunt;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAINearestAttackableTargetMoC;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
 import com.ferreusveritas.mocreatures.entity.aquatic.EnumEgg;
-import com.ferreusveritas.mocreatures.entity.item.MoCEntityEgg;
 import com.ferreusveritas.mocreatures.init.MoCItems;
 import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
 import com.ferreusveritas.mocreatures.inventory.MoCAnimalChest;
@@ -482,72 +481,6 @@ public class EntityWyvern extends MoCEntityTameableAnimal {
 			}
 			if (!this.world.isRemote) {
 				player.displayGUIChest(this.localchest);
-			}
-			return true;
-		}
-
-		if (!stack.isEmpty() && (stack.getItem() == MoCItems.essencelight) && getIsTamed() && getEdad() > 90
-				&& getType() < 5) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, new ItemStack(Items.GLASS_BOTTLE));
-			} else {
-				player.inventory.addItemStackToInventory(new ItemStack(Items.GLASS_BOTTLE));
-			}
-
-			if (!this.world.isRemote) {
-				int i = getType() + 49;
-				MoCEntityEgg entityegg = new MoCEntityEgg(this.world, i);
-				entityegg.setPosition(player.posX, player.posY, player.posZ);
-				player.world.spawnEntity(entityegg);
-				entityegg.motionY += this.world.rand.nextFloat() * 0.05F;
-				entityegg.motionX += (this.world.rand.nextFloat() - this.world.rand.nextFloat()) * 0.3F;
-				entityegg.motionZ += (this.world.rand.nextFloat() - this.world.rand.nextFloat()) * 0.3F;
-			}
-			return true;
-		}
-
-		if (!stack.isEmpty() && this.transformCounter == 0 && getWyvern() == WyvernType.Mother
-				&& (stack.getItem() == MoCItems.essenceundead) && getIsTamed()) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, new ItemStack(Items.GLASS_BOTTLE));
-			} else {
-				player.inventory.addItemStackToInventory(new ItemStack(Items.GLASS_BOTTLE));
-			}
-
-			if (!this.world.isRemote) {
-				transform(6);
-			}
-			return true;
-		}
-
-		if (!stack.isEmpty() && this.transformCounter == 0 && getWyvern() == WyvernType.Mother
-				&& (stack.getItem() == MoCItems.essencelight) && getIsTamed()) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, new ItemStack(Items.GLASS_BOTTLE));
-			} else {
-				player.inventory.addItemStackToInventory(new ItemStack(Items.GLASS_BOTTLE));
-			}
-
-			if (!this.world.isRemote) {
-				transform(7);
-			}
-			return true;
-		}
-
-		if (!stack.isEmpty() && this.transformCounter == 0 && getWyvern() == WyvernType.Mother
-				&& (stack.getItem() == MoCItems.essencedarkness) && getIsTamed()) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, new ItemStack(Items.GLASS_BOTTLE));
-			} else {
-				player.inventory.addItemStackToInventory(new ItemStack(Items.GLASS_BOTTLE));
-			}
-
-			if (!this.world.isRemote) {
-				transform(8);
 			}
 			return true;
 		}

@@ -73,12 +73,7 @@ public class EntityOstrich extends MoCEntityTameableAnimal {
 		None(0, 20, 1.0f),
 		Chick(1, 10, 0.8f),
 		Female(2, 20, 0.8f),
-		Male(3, 25, 1.1f),
-		Albino(4, 25, 1.3f),
-		Nether(5, 35, 1.4f),
-		BlackWyvern(6, 35, 0.8f),
-		Undead(7, 20, 0.8f),
-		Unicorned(8, 20, 0.8f);
+		Male(3, 25, 1.1f);
 
 		public final int type;
 		public final int hp;
@@ -284,10 +279,8 @@ public class EntityOstrich extends MoCEntityTameableAnimal {
 				setType(OstrichType.Chick);
 			} else if (rnd <= (65)) {
 				setType(OstrichType.Female);
-			} else if (rnd <= (95)) {
-				setType(OstrichType.Male);
 			} else {
-				setType(OstrichType.Albino);
+				setType(OstrichType.Male);
 			}
 		}
 		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(calculateMaxHealth());
@@ -298,18 +291,6 @@ public class EntityOstrich extends MoCEntityTameableAnimal {
 	public ResourceLocation getTexture() {
 		if (this.transformCounter != 0 && this.transformType > 4) {
 			String newText = "ostricha.png";
-			if (this.transformType == 5) {
-				newText = "ostriche.png";
-			}
-			if (this.transformType == 6) {
-				newText = "ostrichf.png";
-			}
-			if (this.transformType == 7) {
-				newText = "ostrichg.png";
-			}
-			if (this.transformType == 8) {
-				newText = "ostrichh.png";
-			}
 
 			if ((this.transformCounter % 5) == 0) {
 				return MoCreatures.proxy.getTexture(newText);
@@ -327,11 +308,6 @@ public class EntityOstrich extends MoCEntityTameableAnimal {
 			case Chick:return MoCreatures.proxy.getTexture("ostrichc.png"); //chick
 			case Female:return MoCreatures.proxy.getTexture("ostrichb.png"); //female
 			case Male:return MoCreatures.proxy.getTexture("ostricha.png"); //male
-			case Albino: return MoCreatures.proxy.getTexture("ostrichd.png"); //albino
-			case Nether: return MoCreatures.proxy.getTexture("ostriche.png"); //nether
-			case BlackWyvern: return MoCreatures.proxy.getTexture("ostrichf.png"); //black wyvern
-			case Undead: return MoCreatures.proxy.getTexture("ostrichg.png"); //undead
-			case Unicorned: return MoCreatures.proxy.getTexture("ostrichh.png"); //unicorned
 			case None:
 			default:return MoCreatures.proxy.getTexture("ostricha.png");
 		}
@@ -342,7 +318,6 @@ public class EntityOstrich extends MoCEntityTameableAnimal {
 	public double getCustomSpeed() {
 		OstrichType ostrich = getOstrich();
 		double OstrichSpeed = ostrich.speed;
-		isImmuneToFire = ostrich == OstrichType.Nether;
 		
 		if (this.sprintCounter > 0 && this.sprintCounter < 200) {
 			OstrichSpeed *= 1.5D;
@@ -433,13 +408,6 @@ public class EntityOstrich extends MoCEntityTameableAnimal {
 			if (getType() == 8 && (this.sprintCounter > 0 && this.sprintCounter < 150) && (this.isBeingRidden()) && rand.nextInt(15) == 0) {
 				MoCTools.buckleMobs(this, 2D, this.world);
 			}
-			// TODO
-			//shy ostriches will run and hide
-			/*if (!isNotScared() && fleeingTick > 0 && fleeingTick < 2) {
-                fleeingTick = 0;
-                setHiding(true);
-                this.getNavigator().clearPath();
-            }*/
 
 			if (getHiding()) {
 				//wild shy ostriches will hide their heads only for a short term
@@ -541,9 +509,7 @@ public class EntityOstrich extends MoCEntityTameableAnimal {
 
 	@Override
 	public boolean entitiesToInclude(Entity entity) {
-		return ((entity instanceof MoCEntityEgg) && (((MoCEntityEgg) entity).eggType == 30)
-
-				);
+		return ((entity instanceof MoCEntityEgg) && (((MoCEntityEgg) entity).eggType == 30));
 	}
 
 	@Override
@@ -583,69 +549,6 @@ public class EntityOstrich extends MoCEntityTameableAnimal {
 			return true;
 		}
 
-		if (!stack.isEmpty() && this.getIsTamed() && getType() > 1 && stack.getItem() == MoCItems.essencedarkness) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, new ItemStack(Items.GLASS_BOTTLE));
-			} else {
-				player.inventory.addItemStackToInventory(new ItemStack(Items.GLASS_BOTTLE));
-			}
-			if (getType() == 6) {
-				this.setHealth(getMaxHealth());
-			} else {
-				transform(6);
-			}
-			MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_DRINKING);
-			return true;
-		}
-
-		if (!stack.isEmpty() && this.getIsTamed() && getType() > 1 && stack.getItem() == MoCItems.essenceundead) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, new ItemStack(Items.GLASS_BOTTLE));
-			} else {
-				player.inventory.addItemStackToInventory(new ItemStack(Items.GLASS_BOTTLE));
-			}
-			if (getType() == 7) {
-				this.setHealth(getMaxHealth());
-			} else {
-				transform(7);
-			}
-			MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_DRINKING);
-			return true;
-		}
-
-		if (!stack.isEmpty() && this.getIsTamed() && getType() > 1 && stack.getItem() == MoCItems.essencelight) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, new ItemStack(Items.GLASS_BOTTLE));
-			} else {
-				player.inventory.addItemStackToInventory(new ItemStack(Items.GLASS_BOTTLE));
-			}
-			if (getType() == 8) {
-				this.setHealth(getMaxHealth());
-			} else {
-				transform(8);
-			}
-			MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_DRINKING);
-			return true;
-		}
-
-		if (!stack.isEmpty() && this.getIsTamed() && getType() > 1 && stack.getItem() == MoCItems.essencefire) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, new ItemStack(Items.GLASS_BOTTLE));
-			} else {
-				player.inventory.addItemStackToInventory(new ItemStack(Items.GLASS_BOTTLE));
-			}
-			if (getType() == 5) {
-				this.setHealth(getMaxHealth());
-			} else {
-				transform(5);
-			}
-			MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_DRINKING);
-			return true;
-		}
 		if (getIsTamed() && getIsChested() && (getType() > 1) && !stack.isEmpty() && stack.getItem() == Item.getItemFromBlock(Blocks.WOOL)) {
 			int colorInt = (stack.getItemDamage());
 			if (colorInt == 0) {
@@ -704,14 +607,6 @@ public class EntityOstrich extends MoCEntityTameableAnimal {
 					helmetType = 6;
 				} else if (stack.getItem() == MoCItems.helmetCroc) {
 					helmetType = 7;
-				} else if (stack.getItem() == MoCItems.scorpHelmetDirt) {
-					helmetType = 9;
-				} else if (stack.getItem() == MoCItems.scorpHelmetFrost) {
-					helmetType = 10;
-				} else if (stack.getItem() == MoCItems.scorpHelmetCave) {
-					helmetType = 11;
-				} else if (stack.getItem() == MoCItems.scorpHelmetNether) {
-					helmetType = 12;
 				}
 
 				if (helmetType != 0) {
@@ -785,25 +680,6 @@ public class EntityOstrich extends MoCEntityTameableAnimal {
 
 	@Override
 	protected Item getDropItem() {
-		boolean flag = (this.rand.nextInt(100) < MoCreatures.proxy.rareItemDropChance);
-		if (flag && (this.getType() == 8)) // unicorn
-		{
-			return Items.AIR;//MoCItems.unicornhorn; //TODO: Restore unicorn horn?
-		}
-		if (this.getType() == 5 && flag) {
-			return MoCItems.heartfire;
-		}
-		if (this.getType() == 6 && flag) // black wyvern
-		{
-			return MoCItems.heartdarkness;
-		}
-		if (this.getType() == 7) {
-			if (flag) {
-				return MoCItems.heartundead;
-			}
-			return Items.ROTTEN_FLESH;
-		}
-
 		return Items.FEATHER;
 	}
 

@@ -34,16 +34,12 @@ public class MoCSoundEvents {
 	public static final SoundEvent ENTITY_DOLPHIN_AMBIENT;
 	public static final SoundEvent ENTITY_DOLPHIN_UPSET;
 	public static final SoundEvent ENTITY_DUCK_AMBIENT;
-	public static final SoundEvent ENTITY_DUCK_DEATH;
 	public static final SoundEvent ENTITY_DUCK_HURT;
 	public static final SoundEvent ENTITY_DRAGONFLY_AMBIENT;
 	public static final SoundEvent ENTITY_ELEPHANT_AMBIENT_BABY;
 	public static final SoundEvent ENTITY_ELEPHANT_AMBIENT;
 	public static final SoundEvent ENTITY_ELEPHANT_DEATH;
 	public static final SoundEvent ENTITY_ELEPHANT_HURT;
-	public static final SoundEvent ENTITY_ENT_AMBIENT;
-	public static final SoundEvent ENTITY_ENT_DEATH;
-	public static final SoundEvent ENTITY_ENT_HURT;
 	public static final SoundEvent ENTITY_FLY_AMBIENT;
 	public static final SoundEvent ENTITY_FOX_AMBIENT;
 	public static final SoundEvent ENTITY_FOX_DEATH;
@@ -56,7 +52,6 @@ public class MoCSoundEvents {
 	public static final SoundEvent ENTITY_GENERIC_MAGIC_APPEAR;
 	public static final SoundEvent ENTITY_GENERIC_ROPING;
 	public static final SoundEvent ENTITY_GENERIC_TRANSFORM;
-	public static final SoundEvent ENTITY_GENERIC_TUD;
 	public static final SoundEvent ENTITY_GENERIC_VANISH;
 	public static final SoundEvent ENTITY_GENERIC_WHIP;
 	public static final SoundEvent ENTITY_GENERIC_WINGFLAP;
@@ -105,10 +100,8 @@ public class MoCSoundEvents {
 	public static final SoundEvent ENTITY_TURKEY_AMBIENT;
 	//public static final SoundEvent ENTITY_TURKEY_DEATH;
 	public static final SoundEvent ENTITY_TURKEY_HURT;
-	public static final SoundEvent ENTITY_TURTLE_AMBIENT;
 	public static final SoundEvent ENTITY_TURTLE_ANGRY;
 	public static final SoundEvent ENTITY_TURTLE_DEATH;
-	public static final SoundEvent ENTITY_TURTLE_EATING;
 	public static final SoundEvent ENTITY_TURTLE_HURT;
 	public static final SoundEvent ENTITY_WYVERN_AMBIENT;
 	public static final SoundEvent ENTITY_WYVERN_DEATH;
@@ -153,12 +146,8 @@ public class MoCSoundEvents {
 					ENTITY_DOLPHIN_HURT,
 					ENTITY_DOLPHIN_UPSET,
 					ENTITY_DUCK_AMBIENT,
-					ENTITY_DUCK_DEATH,
 					ENTITY_DUCK_HURT,
 					ENTITY_DRAGONFLY_AMBIENT,
-					ENTITY_ENT_AMBIENT,
-					ENTITY_ENT_DEATH,
-					ENTITY_ENT_HURT,
 					ENTITY_ELEPHANT_AMBIENT_BABY,
 					ENTITY_ELEPHANT_AMBIENT,
 					ENTITY_ELEPHANT_DEATH,
@@ -175,7 +164,6 @@ public class MoCSoundEvents {
 					ENTITY_GENERIC_MAGIC_APPEAR,
 					ENTITY_GENERIC_ROPING,
 					ENTITY_GENERIC_TRANSFORM,
-					ENTITY_GENERIC_TUD,
 					ENTITY_GENERIC_VANISH,
 					ENTITY_GENERIC_WHIP,
 					ENTITY_GENERIC_WINGFLAP,
@@ -222,12 +210,9 @@ public class MoCSoundEvents {
 					ENTITY_SNAKE_SNAP,
 					ENTITY_SNAKE_SWIM,
 					ENTITY_TURKEY_AMBIENT,
-					//ENTITY_TURKEY_DEATH,
 					ENTITY_TURKEY_HURT,
-					ENTITY_TURTLE_AMBIENT,
 					ENTITY_TURTLE_ANGRY,
 					ENTITY_TURTLE_DEATH,
-					ENTITY_TURTLE_EATING,
 					ENTITY_TURTLE_HURT,
 					ENTITY_WYVERN_AMBIENT,
 					ENTITY_WYVERN_DEATH,
@@ -263,12 +248,8 @@ public class MoCSoundEvents {
 			ENTITY_DOLPHIN_HURT = createSoundEvent("dolphinhurt");
 			ENTITY_DOLPHIN_UPSET = createSoundEvent("dolphinupset");
 			ENTITY_DUCK_AMBIENT = createSoundEvent("duck");
-			ENTITY_DUCK_DEATH = createSoundEvent("duckdying"); // TODO
 			ENTITY_DUCK_HURT = createSoundEvent("duckhurt");
 			ENTITY_DRAGONFLY_AMBIENT = createSoundEvent("dragonfly");
-			ENTITY_ENT_AMBIENT = createSoundEvent("entgrunt"); // TODO
-			ENTITY_ENT_DEATH = createSoundEvent("entdying"); // TODO
-			ENTITY_ENT_HURT = createSoundEvent("enthurt"); // TODO
 			ENTITY_ELEPHANT_AMBIENT_BABY = createSoundEvent("elephantcalf");
 			ENTITY_ELEPHANT_AMBIENT = createSoundEvent("elephantgrunt");
 			ENTITY_ELEPHANT_DEATH = createSoundEvent("elephantdying"); // TODO
@@ -285,7 +266,6 @@ public class MoCSoundEvents {
 			ENTITY_GENERIC_MAGIC_APPEAR = createSoundEvent("appearmagic");
 			ENTITY_GENERIC_ROPING = createSoundEvent("roping");
 			ENTITY_GENERIC_TRANSFORM = createSoundEvent("transform");
-			ENTITY_GENERIC_TUD = createSoundEvent("tud"); // TODO
 			ENTITY_GENERIC_VANISH = createSoundEvent("vanish");
 			ENTITY_GENERIC_WHIP = createSoundEvent("whip");
 			ENTITY_GENERIC_WINGFLAP = createSoundEvent("wingflap");
@@ -332,12 +312,9 @@ public class MoCSoundEvents {
 			ENTITY_SNAKE_SNAP = createSoundEvent("snakesnap");
 			ENTITY_SNAKE_SWIM = createSoundEvent("snakeswim");
 			ENTITY_TURKEY_AMBIENT = createSoundEvent("turkey");
-			// ENTITY_TURKEY_DEATH = createSoundEvent("turkeyhurt");
 			ENTITY_TURKEY_HURT = createSoundEvent("turkeyhurt");
-			ENTITY_TURTLE_AMBIENT = createSoundEvent("turtlegrunt"); // TODO
 			ENTITY_TURTLE_ANGRY = createSoundEvent("turtlehissing");
 			ENTITY_TURTLE_DEATH = createSoundEvent("turtledying");
-			ENTITY_TURTLE_EATING = createSoundEvent("turtleeating");
 			ENTITY_TURTLE_HURT = createSoundEvent("turtlehurt");
 			ENTITY_WYVERN_AMBIENT = createSoundEvent("wyverngrunt");
 			ENTITY_WYVERN_DEATH = createSoundEvent("wyverndying");

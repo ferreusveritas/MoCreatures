@@ -42,7 +42,6 @@ import com.ferreusveritas.mocreatures.entity.monster.EntityCaveOgre;
 import com.ferreusveritas.mocreatures.entity.monster.EntityFireOgre;
 import com.ferreusveritas.mocreatures.entity.monster.EntityGreenOgre;
 import com.ferreusveritas.mocreatures.entity.monster.EntityHellRat;
-import com.ferreusveritas.mocreatures.entity.monster.EntityManticore;
 import com.ferreusveritas.mocreatures.entity.monster.EntityRat;
 import com.ferreusveritas.mocreatures.entity.monster.EntityScorpion;
 import com.ferreusveritas.mocreatures.entity.passive.EntityBlackBear;
@@ -51,14 +50,12 @@ import com.ferreusveritas.mocreatures.entity.passive.EntityCrocodile;
 import com.ferreusveritas.mocreatures.entity.passive.EntityDeer;
 import com.ferreusveritas.mocreatures.entity.passive.EntityDuck;
 import com.ferreusveritas.mocreatures.entity.passive.EntityElephant;
-import com.ferreusveritas.mocreatures.entity.passive.EntityEnt;
 import com.ferreusveritas.mocreatures.entity.passive.EntityFox;
 import com.ferreusveritas.mocreatures.entity.passive.EntityGoat;
 import com.ferreusveritas.mocreatures.entity.passive.EntityGrizzlyBear;
 import com.ferreusveritas.mocreatures.entity.passive.EntityKomodo;
 import com.ferreusveritas.mocreatures.entity.passive.EntityLeopard;
 import com.ferreusveritas.mocreatures.entity.passive.EntityLion;
-import com.ferreusveritas.mocreatures.entity.passive.EntityManticorePet;
 import com.ferreusveritas.mocreatures.entity.passive.EntityMole;
 import com.ferreusveritas.mocreatures.entity.passive.EntityMouse;
 import com.ferreusveritas.mocreatures.entity.passive.EntityOstrich;
@@ -129,14 +126,12 @@ public class MoCEntities {
 	public static EntityEntry DUCK = createEntityEntry(EntityDuck.class, "Duck", 14021607, 15656192);//, 0x2600, 0x052500);
 	public static EntityEntry DEER = createEntityEntry(EntityDeer.class, "Deer", 14021607, 33023);//, 0x2600, 0x052500);
 	public static EntityEntry ELEPHANT = createEntityEntry(EntityElephant.class, "Elephant", 14772545, 23423);
-	public static EntityEntry ENT = createEntityEntry(EntityEnt.class, "Ent", 12623485, 16711680);
 	public static EntityEntry FOX = createEntityEntry(EntityFox.class, "Fox", 14772545, 5253242);//, 0x2600, 0x052500);
 	public static EntityEntry GOAT = createEntityEntry(EntityGoat.class, "Goat", 7434694, 6053069);//, 0x2600, 0x052500);
 	public static EntityEntry GRIZZLY_BEAR = createEntityEntry(EntityGrizzlyBear.class, "GrizzlyBear", 14772545, 1);//, 0x2600, 0x052500);
 	public static EntityEntry KOMODO_DRAGON = createEntityEntry(EntityKomodo.class, "KomodoDragon", 16711680, 23423);
 	public static EntityEntry LEOPARD = createEntityEntry(EntityLeopard.class, "Leopard", 13749760, 10);
 	public static EntityEntry LION = createEntityEntry(EntityLion.class, "Lion", 15313474, 13749760);
-	public static EntityEntry MANTICORE_PET = createEntityEntry(EntityManticorePet.class, "ManticorePet");
 	public static EntityEntry MOLE = createEntityEntry(EntityMole.class, "Mole", 14020607, 16711680);
 	public static EntityEntry MOUSE = createEntityEntry(EntityMouse.class, "Mouse", 14772545, 0);//, 0x02600, 0x002500);
 	public static EntityEntry OSTRICH = createEntityEntry(EntityOstrich.class, "Ostrich", 14020607, 9639167);//, 0x2600, 0x052500);
@@ -157,7 +152,6 @@ public class MoCEntities {
 	public static EntityEntry FIRE_OGRE = createEntityEntry(EntityFireOgre.class, "FireOgre", 16711680, 9320595);//, 0x2600, 0x052500);
 	public static EntityEntry GREEN_OGRE = createEntityEntry(EntityGreenOgre.class, "GreenOgre", 16711680, 65407);//, 0x2600, 0x052500);
 	public static EntityEntry HELLRAT = createEntityEntry(EntityHellRat.class, "HellRat", 16711680, 14772545);//, 0x2600, 0x052500);
-	public static EntityEntry MANTICORE = createEntityEntry(EntityManticore.class, "Manticore", 16711680, 0);
 	public static EntityEntry RAT = createEntityEntry(EntityRat.class, "Rat", 16711680, 9141102);//, 0x2600, 0x052500);
 	public static EntityEntry SCORPION = createEntityEntry(EntityScorpion.class, "Scorpion", 16711680, 6053069);//, 0x2600, 0x052500);
 
@@ -498,9 +492,6 @@ public class MoCEntities {
 				.AddSpawn(2, 1, 1, Type.JUNGLE, Type.SNOWY)
 				.AddSpawn(3, 1, 1, Type.SAVANNA);
 
-			AddCreature("Ent", EntityEnt.class);
-				//.AddSpawn(4, 1, 2, Type.FOREST);
-
 			AddCreature("Fox", EntityFox.class)
 				.AddSpawn(4, 1, 1, Type.FOREST, Type.PLAINS, Type.SNOWY);
 
@@ -675,8 +666,6 @@ public class MoCEntities {
 					.and(tropicalIsland().negate()) //But not Tropical Islands
 					.and(vanilla().or(bop())) //Make sure they don't show up in custom dimensions unexpectedly such as twilight forest
 				); //But not Tropical Islands
-			
-			AddMonster("Manticore", EntityManticore.class);
 			 
 		}
 
