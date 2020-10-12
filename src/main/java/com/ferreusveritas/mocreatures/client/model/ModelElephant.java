@@ -592,11 +592,11 @@ public class ModelElephant extends ModelBase {
         if (tusks == 0) {
             this.LeftTuskB.render(f5);
             this.RightTuskB.render(f5);
-            if (elephant.getIsAdult() || elephant.getEdad() > 70) {
+            if (elephant.getIsAdult() || elephant.getAge() > 70) {
                 this.LeftTuskC.render(f5);
                 this.RightTuskC.render(f5);
             }
-            if (elephant.getIsAdult() || elephant.getEdad() > 90) {
+            if (elephant.getIsAdult() || elephant.getAge() > 90) {
                 this.LeftTuskD.render(f5);
                 this.RightTuskD.render(f5);
             }

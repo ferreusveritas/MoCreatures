@@ -1,11 +1,11 @@
 package com.ferreusveritas.mocreatures.entity.passive;
 
-import com.ferreusveritas.mocreatures.entity.MoCEntityTameableAnimal;
-import com.ferreusveritas.mocreatures.entity.ai.EntityAIFollowOwnerPlayer;
-import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
-import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
 import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.MoCreatures;
+import com.ferreusveritas.mocreatures.entity.MoCEntityAnimal;
+import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
+import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -28,102 +28,87 @@ import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
-public class EntityTurtle extends MoCEntityTameableAnimal {
-
+public class EntityTurtle extends MoCEntityAnimal {
+	
 	private boolean isSwinging;
 	private boolean twistright;
 	private int flopcounter;
 	private static final DataParameter<Boolean> IS_UPSIDE_DOWN = EntityDataManager.<Boolean>createKey(EntityTurtle.class, DataSerializers.BOOLEAN);
 	private static final DataParameter<Boolean> IS_HIDING = EntityDataManager.<Boolean>createKey(EntityTurtle.class, DataSerializers.BOOLEAN);
-
+	
 	public EntityTurtle(World world) {
 		super(world);
 		setSize(0.6F, 0.4F);
 		setAdult(false);
-		setEdad(60 + this.rand.nextInt(50));
+		setAge(60 + this.rand.nextInt(50));
 	}
-
+	
 	@Override
 	protected void initEntityAI() {
-		this.tasks.addTask(1, new EntityAIFollowOwnerPlayer(this, 0.8D, 2F, 10F));
 		this.tasks.addTask(5, new EntityAIWanderMoC2(this, 0.8D, 50));
 		this.tasks.addTask(6, new EntityAIWatchClosest(this, EntityPlayer.class, 6.0F));
 	}
-
+	
 	@Override
 	protected void applyEntityAttributes() {
 		super.applyEntityAttributes();
 		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(15.0D);
 		this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.15D);
 	}
-
+	
 	@Override
 	protected void entityInit() {
 		super.entityInit();
 		this.dataManager.register(IS_UPSIDE_DOWN, Boolean.valueOf(false));; // rideable: 0 nothing, 1 saddle
 		this.dataManager.register(IS_HIDING, Boolean.valueOf(false));; // rideable: 0 nothing, 1 saddle
 	}
-
+	
 	@Override
 	public ResourceLocation getTexture() {
 		return MoCreatures.proxy.getTexture("turtle.png");
 	}
-
+	
 	public boolean getIsHiding() {
 		return ((Boolean)this.dataManager.get(IS_HIDING)).booleanValue();
 	}
-
+	
 	public boolean getIsUpsideDown() {
 		return ((Boolean)this.dataManager.get(IS_UPSIDE_DOWN)).booleanValue();
 	}
-
+	
 	public void setIsHiding(boolean flag) {
 		this.dataManager.set(IS_HIDING, Boolean.valueOf(flag));
 	}
-
+	
 	public void setIsUpsideDown(boolean flag) {
 		this.flopcounter = 0;
 		this.swingProgress = 0.0F;
 		this.dataManager.set(IS_UPSIDE_DOWN, Boolean.valueOf(flag));
 	}
-
+	
 	@Override
 	public double getYOffset() {
 		if (this.getRidingEntity() instanceof EntityPlayer) {
 			if (((EntityPlayer) this.getRidingEntity()).isSneaking()) {
-				return -0.25D + ((300D - this.getEdad()) / 500D);
+				return -0.25D + ((300D - this.getAge()) / 500D);
 			}
-			return (300D - this.getEdad()) / 500D;
+			return (300D - this.getAge()) / 500D;
 		}
-
+		
 		return super.getYOffset();
 	}
-
+	
 	@Override
 	public boolean processInteract(EntityPlayer player, EnumHand hand) {
-		final Boolean tameResult = this.processTameInteract(player, hand);
-		if (tameResult != null) {
-			return tameResult;
-		}
-
-		if (getIsTamed()) {
-			if (getIsUpsideDown()) {
-				flipflop(false);
-				return true;
-			}
-			if (this.getRidingEntity() == null) {
-				if (this.startRiding(player)) {
-					this.rotationYaw = player.rotationYaw;
-				}
-			}
+		
+		if (getIsUpsideDown()) {
+			flipflop(false);
 			return true;
 		}
-
-		flipflop(!getIsUpsideDown());
-
+		
 		return super.processInteract(player, hand);
 	}
-
+	
 	@Override
 	protected void jump() {
 		if (isInsideOfMaterial(Material.WATER)) {
@@ -136,12 +121,12 @@ public class EntityTurtle extends MoCEntityTameableAnimal {
 			this.isAirBorne = true;
 		}
 	}
-
+	
 	@Override
 	public boolean isNotScared() {
 		return true;
 	}
-
+	
 	@Override
 	public void onLivingUpdate() {
 		super.onLivingUpdate();
@@ -153,10 +138,10 @@ public class EntityTurtle extends MoCEntityTameableAnimal {
 						MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_TURTLE_ANGRY);
 						setIsHiding(true);
 					}
-
+					
 					this.getNavigator().clearPath();
 				} else {
-
+					
 					setIsHiding(false);
 					if (!hasPath() && this.rand.nextInt(50) == 0) {
 						EntityItem entityitem = getClosestItem(this, 10D, Items.MELON, Items.REEDS);
@@ -167,10 +152,6 @@ public class EntityTurtle extends MoCEntityTameableAnimal {
 							}
 							if ((f < 2.0F) && (entityitem != null) && (this.deathTime == 0)) {
 								entityitem.setDead();
-								EntityPlayer entityplayer = this.world.getClosestPlayerToEntity(this, 24D);
-								if (entityplayer != null) {
-									MoCTools.tameWithName(entityplayer, this);
-								}
 							}
 						}
 					}
@@ -178,17 +159,17 @@ public class EntityTurtle extends MoCEntityTameableAnimal {
 			}
 		}
 	}
-
+	
 	@Override
 	public boolean swimmerEntity() {
 		return false;
 	}
-
+	
 	@Override
 	public boolean canBreatheUnderwater() {
 		return true;
 	}
-
+	
 	@Override
 	public boolean attackEntityFrom(DamageSource damagesource, float i) {
 		Entity entity = damagesource.getTrueSource();
@@ -211,23 +192,23 @@ public class EntityTurtle extends MoCEntityTameableAnimal {
 			return flag;
 		}
 	}
-
+	
 	public void flipflop(boolean flip) {
 		setIsUpsideDown(flip);
 		setIsHiding(false);
 		this.getNavigator().clearPath();
 	}
-
+	
 	@Override
 	public boolean entitiesToIgnore(Entity entity) {
 		return (entity instanceof EntityTurtle) || ((entity.height <= this.height) && (entity.width <= this.width))
 				|| super.entitiesToIgnore(entity);
 	}
-
+	
 	@Override
 	public void onUpdate() {
 		super.onUpdate();
-
+		
 		if ((this.getRidingEntity() != null) && (this.getRidingEntity() instanceof EntityPlayer)) {
 			EntityPlayer entityplayer = (EntityPlayer) this.getRidingEntity();
 			if (entityplayer != null) {
@@ -235,8 +216,8 @@ public class EntityTurtle extends MoCEntityTameableAnimal {
 			}
 		}
 		//to make mega turtles if tamed
-		if (getIsTamed() && getEdad() < 300 && this.rand.nextInt(900) == 0) {
-			setEdad(getEdad() + 1);
+		if (getIsTamed() && getAge() < 300 && this.rand.nextInt(900) == 0) {
+			setAge(getAge() + 1);
 		}
 		if (getIsUpsideDown() && isInWater()) {
 			setIsUpsideDown(false);
@@ -245,19 +226,19 @@ public class EntityTurtle extends MoCEntityTameableAnimal {
 			setSwinging(true);
 			this.flopcounter++;
 		}
-
+		
 		if (getIsSwinging()) {
 			this.swingProgress += 0.2F;
-
+			
 			boolean flag = (this.flopcounter > (this.rand.nextInt(3) + 8));
-
+			
 			if (this.swingProgress > 2.0F && (!flag || this.rand.nextInt(20) == 0)) {
 				setSwinging(false);
 				this.swingProgress = 0.0F;
 				if (this.rand.nextInt(2) == 0) {
 					this.twistright = !this.twistright;
 				}
-
+				
 			} else if (this.swingProgress > 9.0F && flag) {
 				setSwinging(false);
 				MoCTools.playCustomSound(this, SoundEvents.ENTITY_CHICKEN_EGG);
@@ -265,79 +246,74 @@ public class EntityTurtle extends MoCEntityTameableAnimal {
 			}
 		}
 	}
-
+	
 	public boolean getIsSwinging() {
 		return this.isSwinging;
 	}
-
+	
 	public void setSwinging(boolean flag) {
 		this.isSwinging = flag;
 	}
-
+	
 	@Override
 	public boolean isMovementCeased() {
 		return (getIsUpsideDown() || getIsHiding());
 	}
-
+	
 	public int getFlipDirection() {
 		if (this.twistright) {
 			return 1;
 		}
 		return -1;
 	}
-
+	
 	@Override
 	public void readEntityFromNBT(NBTTagCompound nbttagcompound) {
 		super.readEntityFromNBT(nbttagcompound);
 		setIsUpsideDown(nbttagcompound.getBoolean("UpsideDown"));
 	}
-
+	
 	@Override
 	public void writeEntityToNBT(NBTTagCompound nbttagcompound) {
 		super.writeEntityToNBT(nbttagcompound);
 		nbttagcompound.setBoolean("UpsideDown", getIsUpsideDown());
 	}
-
+	
 	@Override
 	protected SoundEvent getHurtSound(DamageSource source) {
 		return MoCSoundEvents.ENTITY_TURTLE_HURT;
 	}
-
+	
 	@Override
 	protected SoundEvent getDeathSound() {
 		return MoCSoundEvents.ENTITY_TURTLE_DEATH;
 	}
-
+	
 	@Override
 	protected Item getDropItem() { 
 		return Items.AIR;
 	}
-
+	
 	@Override
 	public boolean isMyHealFood(ItemStack stack) {
 		return !stack.isEmpty() && (stack.getItem() == Items.REEDS || stack.getItem() == Items.MELON);
 	}
-
+	
 	@Override
 	public int getMaxSpawnedInChunk() {
 		return 2;
 	}
-
-	@Override
-	public int nameYOffset() {
-		return -10 - (getEdad() / 5);
-	}
-
+	
 	@Override
 	public boolean isPushedByWater() {
 		return true;
 	}
-
+	
 	@Override
 	public boolean isAmphibian() {
 		return true;
 	}
-
+	
 	@Override
 	public float getAIMoveSpeed() {
 		if (isInWater()) {
@@ -345,22 +321,22 @@ public class EntityTurtle extends MoCEntityTameableAnimal {
 		}
 		return 0.12F;
 	}
-
+	
 	@Override
 	protected double minDivingDepth() {
-		return (getEdad() + 8D) / 340D;
+		return (getAge() + 8D) / 340D;
 	}
-
+	
 	@Override
 	protected double maxDivingDepth() {
-		return 1D * (this.getEdad() / 100D);
+		return 1D * (this.getAge() / 100D);
 	}
-
+	
 	@Override
-	public int getMaxEdad() {
+	public int getMaxAge() {
 		return 120;
 	}
-
+	
 	@Override
 	public boolean canRidePlayer()
 	{

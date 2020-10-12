@@ -8,7 +8,7 @@ public class EntityMantaRay extends EntityRay {
 	public EntityMantaRay(World world) {
 		super(world);
 		setSize(1.8F, 1F);
-		setEdad(80 + (this.rand.nextInt(100)));
+		//setEdad(80 + (this.rand.nextInt(100)));
 		setTexture("mantray");
 	}
 

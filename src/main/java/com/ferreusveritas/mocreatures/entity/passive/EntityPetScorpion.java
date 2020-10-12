@@ -3,9 +3,9 @@ package com.ferreusveritas.mocreatures.entity.passive;
 import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.MoCreatures;
 import com.ferreusveritas.mocreatures.entity.MoCEntityTameableAnimal;
-import com.ferreusveritas.mocreatures.entity.ai.EntityAIFleeFromPlayer;
-import com.ferreusveritas.mocreatures.entity.ai.EntityAIFollowOwnerPlayer;
+import com.ferreusveritas.mocreatures.entity.ai.EntityAIAvoidPlayer;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIHunt;
+import com.ferreusveritas.mocreatures.entity.ai.EntityAIOwnableFollowOwner;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
 import com.ferreusveritas.mocreatures.entity.monster.EntityScorpion;
 import com.ferreusveritas.mocreatures.entity.monster.EntityScorpion.ScorpionType;
@@ -56,7 +56,7 @@ public class EntityPetScorpion extends MoCEntityTameableAnimal {
 		setSize(1.4F, 0.9F);
 		this.poisontimer = 0;
 		setAdult(false);
-		setEdad(20);
+		setAge(20);
 		setHasBabies(false);
 		this.stepHeight = 20.0F;
 	}
@@ -74,8 +74,8 @@ public class EntityPetScorpion extends MoCEntityTameableAnimal {
 		this.tasks.addTask(0, new EntityAISwimming(this));
 		this.tasks.addTask(1, new EntityAIAttackMelee(this, 1.0D, true));
 		this.tasks.addTask(4, new EntityAIWanderMoC2(this, 1.0D));
-		this.tasks.addTask(5, new EntityAIFleeFromPlayer(this, 1.2D, 4D));
-		this.tasks.addTask(6, new EntityAIFollowOwnerPlayer(this, 1.0D, 2F, 10F));
+		this.tasks.addTask(5, new EntityAIAvoidPlayer(this, 4.0f, 1.2, 1.2));
+		this.tasks.addTask(6, new EntityAIOwnableFollowOwner(this, 1.0D, 2F, 10F));
 		this.tasks.addTask(7, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
 		this.targetTasks.addTask(1, new EntityAIHunt(this, EntityAnimal.class, true));
 	}
@@ -369,11 +369,11 @@ public class EntityPetScorpion extends MoCEntityTameableAnimal {
 			return true;
 		}
 
-		if (this.getRidingEntity() == null && this.getEdad() < 60 && !getIsAdult()) {
+		if (this.getRidingEntity() == null && this.getAge() < 60 && !getIsAdult()) {
 			if (this.startRiding(player)) {
 				this.rotationYaw = player.rotationYaw;
 				if (!this.world.isRemote && !getIsTamed()) {
-					MoCTools.tameWithName(player, this);
+					//MoCTools.tameWithName(player, this);
 				}
 			}
 
@@ -412,21 +412,6 @@ public class EntityPetScorpion extends MoCEntityTameableAnimal {
 		super.writeEntityToNBT(nbttagcompound);
 		nbttagcompound.setBoolean("Babies", getHasBabies());
 		nbttagcompound.setBoolean("Saddled", getIsRideable());
-	}
-
-	@Override
-	public int nameYOffset() {
-		int n = (int) (1 - (getEdad() * 0.8));
-		if (n < -60) {
-			n = -60;
-		}
-		if (getIsAdult()) {
-			n = -60;
-		}
-		if (getIsSitting()) {
-			n = (int) (n * 0.8);
-		}
-		return n;
 	}
 
 	@Override
@@ -477,7 +462,7 @@ public class EntityPetScorpion extends MoCEntityTameableAnimal {
 	}
 
 	@Override
-	public int getMaxEdad() {
+	public int getMaxAge() {
 		return 120;
 	}
 

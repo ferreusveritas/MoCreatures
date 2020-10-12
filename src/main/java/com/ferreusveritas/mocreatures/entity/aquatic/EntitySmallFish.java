@@ -3,7 +3,7 @@ package com.ferreusveritas.mocreatures.entity.aquatic;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.ferreusveritas.mocreatures.entity.MoCEntityTameableAquatic;
+import com.ferreusveritas.mocreatures.entity.MoCEntityAquatic;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIFleeFromEntityMoC;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIMoveHelperFish;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIPanicMoC;
@@ -22,7 +22,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-public abstract class EntitySmallFish extends MoCEntityTameableAquatic {
+public abstract class EntitySmallFish extends MoCEntityAquatic {
 
 	private static Map<Integer, SmallFishType> map = new HashMap<>();
 	
@@ -55,7 +55,7 @@ public abstract class EntitySmallFish extends MoCEntityTameableAquatic {
 	public EntitySmallFish(World world) {
 		super(world);
 		setSize(0.3F, 0.3F);
-		setEdad(70 + rand.nextInt(30));
+		//setEdad(70 + rand.nextInt(30));
 		moveHelper = new EntityAIMoveHelperFish(this);
 	}
 	
@@ -162,7 +162,8 @@ public abstract class EntitySmallFish extends MoCEntityTameableAquatic {
 
 	@Override
 	public float getSizeFactor() {
-		return getEdad() * 0.01F;
+		return 1.0f;
+		//return getEdad() * 0.01F;
 	}
 
 	@Override
@@ -187,11 +188,6 @@ public abstract class EntitySmallFish extends MoCEntityTameableAquatic {
 	@Override
 	public float rollRotationOffset() {
 		return isInWater() ? 0.0f : -90.0f;
-	}
-
-	@Override
-	public int nameYOffset() {
-		return -25;
 	}
 
 	@Override

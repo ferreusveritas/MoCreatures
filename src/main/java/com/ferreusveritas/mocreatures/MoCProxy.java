@@ -22,17 +22,12 @@ public class MoCProxy implements IGuiHandler {
 
 	//CONFIG VARIABLES
 	// Client Only
-	public boolean displayPetHealth;
-	public boolean displayPetName;
-	public boolean displayPetIcons;
 	public boolean animateTextures;
 
 	public boolean attackDolphins;
 	public boolean attackWolves;
 
 	public boolean destroyDrops;
-	public boolean enableOwnership;
-	public boolean enableResetOwnership;
 	public boolean elephantBulldozer;
 	public boolean killallVillagers;
 
@@ -65,7 +60,6 @@ public class MoCProxy implements IGuiHandler {
 	public boolean debug = false;
 	public boolean allowInstaSpawn;
 	public boolean needsUpdate = false;
-	public boolean worldInitDone = false;
 	public int activeScreen = -1;
 
 	protected static final String CATEGORY_MOC_GENERAL_SETTINGS = "global-settings";
@@ -93,18 +87,6 @@ public class MoCProxy implements IGuiHandler {
 
 	public boolean getAnimateTextures() {
 		return false;
-	}
-
-	public boolean getDisplayPetName() {
-		return this.displayPetName;
-	}
-
-	public boolean getDisplayPetIcons() {
-		return this.displayPetIcons;
-	}
-
-	public boolean getDisplayPetHealth() {
-		return this.displayPetHealth;
 	}
 
 	public int getParticleFX() {
@@ -136,9 +118,6 @@ public class MoCProxy implements IGuiHandler {
 	 */
 	public void readGlobalConfigValues() {
 		// client-side only
-		this.displayPetHealth = true;
-		this.displayPetName = true;
-		this.displayPetIcons = true;
 		this.animateTextures = true;
 
 		// general
@@ -149,8 +128,6 @@ public class MoCProxy implements IGuiHandler {
 		this.forceDespawns = true;//If true, it will force despawns on all creatures including vanilla for a more dynamic experience while exploring world. If false, all passive mocreatures will not despawn to prevent other creatures from taking over. Note: if you experience issues with farm animals despawning, adjust despawnLightLevel. If CMS is installed, this setting must remain true if you want MoCreatures to despawn.
 		this.maxTamed = 10;//Max tamed creatures a player can have. Requires enableOwnership to be set to true.
 		this.maxOPTamed = 20;//Max tamed creatures an op can have. Requires enableOwnership to be set to true.
-		this.enableOwnership = true;//Assigns player as owner for each creature they tame. Only the owner can interact with the tamed creature.
-		this.enableResetOwnership = false;//Allows players to remove a tamed creatures owner essentially untaming it.
 		this.elephantBulldozer = true;
 		this.ostrichEggDropChance = 3;//A value of 3 means ostriches have a 3% chance to drop an egg.
 		this.particleFX = 3;

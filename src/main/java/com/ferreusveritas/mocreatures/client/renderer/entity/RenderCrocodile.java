@@ -94,7 +94,7 @@ public class RenderCrocodile extends RenderLiving<EntityCrocodile> {
 
     protected void stretch(EntityCrocodile entitycrocodile) {
         // float f = 1.3F;
-        float f = entitycrocodile.getEdad() * 0.01F;
+        float f = entitycrocodile.getAge() * 0.01F;
         // if(!entitycrocodile.getIsAdult()) { f = entitycrocodile.edad; }
         GL11.glScalef(f, f, f);
     }

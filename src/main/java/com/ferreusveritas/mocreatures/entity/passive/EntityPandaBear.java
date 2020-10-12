@@ -1,10 +1,8 @@
 package com.ferreusveritas.mocreatures.entity.passive;
 
-import com.ferreusveritas.mocreatures.entity.IMoCTameable;
-import com.ferreusveritas.mocreatures.init.MoCItems;
-import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.MoCreatures;
-import net.minecraft.entity.Entity;
+import com.ferreusveritas.mocreatures.entity.components.ComponentStandSit.Posture;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
@@ -13,144 +11,93 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 
-public class EntityPandaBear extends EntityBear{
-
-    public EntityPandaBear(World world) {
-        super(world);
-    }
-    
-    @Override
-    public void selectType() {
-        if (getType() == 0) {
-            setType(1);
-        }
-        super.selectType();
-    }
-    
-    @Override
-    public ResourceLocation getTexture() {
-        return MoCreatures.proxy.getTexture("bearpanda.png");
-    }
-    
-    @Override
-    public float getBearSize() {
-        return 0.8F;
-    }
-    
-    @Override
-    public int getMaxEdad() {
-        return 80;
-    }
-        
-    @Override
-    public float calculateMaxHealth() {
-        return 20;
-    }
-    
-    @Override
-    public boolean isReadyToHunt() {
-        return false;
-    }
-
-    @Override
-    public int getAttackStrength() {
-        return 1;
-    }
-    
-    @Override
-    public boolean attackEntityFrom(DamageSource damagesource, float i) {
-        if (super.attackEntityFrom(damagesource, i)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-    
-    @Override
-    public boolean shouldAttackPlayers() {
-        return false;
-    }
-    
-    @Override
-    public boolean isMyFavoriteFood(ItemStack stack) {
-        return this.getType() == 3 && !stack.isEmpty() && stack.getItem() == Items.REEDS;
-    }
-
-    @Override
-    public boolean isMyHealFood(ItemStack stack) {
-        return this.getType() == 3 && !stack.isEmpty() && stack.getItem() == Items.REEDS;
-    }
-    
-    @Override
-    public boolean processInteract(EntityPlayer player, EnumHand hand) {
-        final Boolean tameResult = this.processTameInteract(player, hand);
-        if (tameResult != null) {
-            return tameResult;
-        }
-
-        final ItemStack stack = player.getHeldItem(hand);
-        if (!stack.isEmpty() && (stack.getItem() == Items.SUGAR || stack.getItem() == Items.REEDS)) {
-            stack.shrink(1);
-            if (stack.isEmpty()) {
-                player.setHeldItem(hand, ItemStack.EMPTY);
-            }
-
-            if (!this.world.isRemote) {
-                MoCTools.tameWithName(player, this);
-            }
-
-            this.setHealth(getMaxHealth());
-            eatingAnimal();
-            if (!this.world.isRemote && !getIsAdult() && (getEdad() < 100)) {
-                setEdad(getEdad() + 1);
-            }
-
-            return true;
-        }
-        if (!stack.isEmpty() && getIsTamed() && stack.getItem() == MoCItems.whip) {
-            if (getBearState() == 0) {
-                setBearState(2);
-            }else {
-                setBearState(0);
-            }
-            return true;
-        }
-        if (this.getIsRideable() && this.getIsAdult() && (!this.getIsChested() || !player.isSneaking()) && !this.isBeingRidden()) {
-            if (!this.world.isRemote && player.startRiding(this)) {
-                player.rotationYaw = this.rotationYaw;
-                player.rotationPitch = this.rotationPitch;
-                setBearState(0);
-            }
-
-            return true;
-        }
-
-        return super.processInteract(player, hand);
-    }
-    
-    @Override
-    public void onLivingUpdate() {
-        super.onLivingUpdate();
-        /**
-         * panda bears and cubs will sit down every now and then
-         */
-        if (!this.world.isRemote && !getIsTamed() && this.rand.nextInt(300) == 0) {
-            setBearState(2);
-        }
-    }
-
-    @Override
-    public String getOffspringClazz(IMoCTameable mate) {
-        return "PandaBear";
-    }
-
-    @Override
-    public int getOffspringTypeInt(IMoCTameable mate) {
-        return 1;
-    }
-
-    @Override
-    public boolean compatibleMate(Entity mate) {
-        return mate instanceof EntityPandaBear;
-    }
+public class EntityPandaBear extends EntityBear {
+	
+	public EntityPandaBear(World world) {
+		super(world);
+	}
+	
+	@Override
+	public ResourceLocation getTexture() {
+		return MoCreatures.proxy.getTexture("bearpanda.png");
+	}
+	
+	@Override
+	public float getSpeciesSize() {
+		return 1.2F;
+	}
+	
+	@Override
+	public float calculateMaxHealth() {
+		return 20;
+	}
+	
+	@Override
+	public boolean isReadyToHunt() {
+		return false;
+	}
+	
+	@Override
+	public double calculateAttackDmg() {
+		return 1;
+	}
+	
+	@Override
+	public boolean attackEntityFrom(DamageSource damagesource, float i) {
+		if (super.attackEntityFrom(damagesource, i)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	@Override
+	public boolean shouldAttackPlayers() {
+		return false;
+	}
+	
+	@Override
+	protected boolean isEdible(ItemStack stack) {
+		return !stack.isEmpty() && stack.getItem() == Items.REEDS;
+	}
+	
+	@Override
+	public boolean isMyFavoriteFood(ItemStack stack) {
+		return isEdible(stack);
+	}
+	
+	@Override
+	public boolean isMyHealFood(ItemStack stack) {
+		return isEdible(stack);
+	}
+	
+	public boolean processInteractFeed(EntityPlayer player, ItemStack stack, EnumHand hand) {
+		if (!stack.isEmpty() && (stack.getItem() == Items.SUGAR || stack.getItem() == Items.REEDS)) {
+			
+			consumeItemFromStack(player, stack);
+			
+			if (!world.isRemote) {
+				setTamedBy(player);
+			}
+			
+			setHealth(getMaxHealth());
+			eatingAnimal();
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	@Override
+	protected void updateSitting() {
+		
+		//panda bears and cubs will sit down every now and then
+		if (isAdult() && !isTamed() && (rand.nextInt(300) == 0)) {
+			setPosture(Posture.Sitting);
+		}
+		
+		super.updateSitting();
+	}
+	
 }

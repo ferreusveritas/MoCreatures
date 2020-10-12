@@ -3,7 +3,7 @@ package com.ferreusveritas.mocreatures.entity.aquatic;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.ferreusveritas.mocreatures.entity.MoCEntityTameableAquatic;
+import com.ferreusveritas.mocreatures.entity.MoCEntityAquatic;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIFleeFromEntityMoC;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIMoveHelperFish;
 import com.ferreusveritas.mocreatures.init.MoCItems;
@@ -19,7 +19,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class EntityMediumFish extends MoCEntityTameableAquatic {
+public class EntityMediumFish extends MoCEntityAquatic {
 
 	private static Map<Integer, MediumFishType> map = new HashMap<>();
 	
@@ -46,7 +46,7 @@ public class EntityMediumFish extends MoCEntityTameableAquatic {
 	public EntityMediumFish(World world) {
 		super(world);
 		setSize(0.6F, 0.3F);
-		setEdad(30 + this.rand.nextInt(70));
+		//setEdad(30 + this.rand.nextInt(70));
 		moveHelper = new EntityAIMoveHelperFish(this);
 	}
 
@@ -124,7 +124,8 @@ public class EntityMediumFish extends MoCEntityTameableAquatic {
 
 	@Override
 	public float getSizeFactor() {
-		return getEdad() * 0.01F;
+		return 1.0f;
+		//return getEdad() * 0.01F;
 	}
 
 	@Override
@@ -155,11 +156,6 @@ public class EntityMediumFish extends MoCEntityTameableAquatic {
 			return -90F;
 		}
 		return 0F;
-	}
-
-	@Override
-	public int nameYOffset() {
-		return -30;
 	}
 
 	@Override

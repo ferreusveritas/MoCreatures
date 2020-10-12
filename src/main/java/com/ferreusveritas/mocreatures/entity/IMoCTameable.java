@@ -3,10 +3,6 @@ package com.ferreusveritas.mocreatures.entity;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
 
-import java.util.UUID;
-
-import javax.annotation.Nullable;
-
 public interface IMoCTameable extends IMoCEntity {
 
     boolean isRiderDisconnecting();
@@ -22,8 +18,6 @@ public interface IMoCTameable extends IMoCEntity {
     void writeEntityToNBT(NBTTagCompound nbttagcompound);
 
     void readEntityFromNBT(NBTTagCompound nbttagcompound);
-
-    void setOwnerId(@Nullable UUID uuid);
 
     float getPetHealth();
 

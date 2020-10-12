@@ -30,9 +30,9 @@ public class RenderTurtle extends RenderMoC<EntityTurtle> {
 
         }
         if (entityturtle.getIsHiding()) {
-            adjustHeight(entityturtle, 0.15F * entityturtle.getEdad() * 0.01F);
+            adjustHeight(entityturtle, 0.15F * entityturtle.getAge() * 0.01F);
         } else if (!entityturtle.getIsHiding() && !entityturtle.getIsUpsideDown() && !entityturtle.isInsideOfMaterial(Material.WATER)) {
-            adjustHeight(entityturtle, 0.05F * entityturtle.getEdad() * 0.01F);
+            adjustHeight(entityturtle, 0.05F * entityturtle.getAge() * 0.01F);
         }
         if (entityturtle.getIsUpsideDown()) {
             rotateAnimal(entityturtle);
@@ -49,7 +49,7 @@ public class RenderTurtle extends RenderMoC<EntityTurtle> {
         float f = entityturtle.swingProgress * 10F * entityturtle.getFlipDirection();
         float f2 = entityturtle.swingProgress / 30 * entityturtle.getFlipDirection();
         GlStateManager.rotate(180F + f, 0.0F, 0.0F, -1.0F);
-        GlStateManager.translate(0.0F - f2, 0.5F * entityturtle.getEdad() * 0.01F, 0.0F);
+        GlStateManager.translate(0.0F - f2, 0.5F * entityturtle.getAge() * 0.01F, 0.0F);
     }
 
     protected void adjustHeight(EntityTurtle entityturtle, float height) {
@@ -57,7 +57,7 @@ public class RenderTurtle extends RenderMoC<EntityTurtle> {
     }
 
     protected void stretch(EntityTurtle entityturtle) {
-        float f = entityturtle.getEdad() * 0.01F;
+        float f = entityturtle.getAge() * 0.01F;
         GlStateManager.scale(f, f, f);
     }
 

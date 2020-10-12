@@ -28,7 +28,7 @@ public class EntityDeer extends MoCEntityTameableAnimal {
 
     public EntityDeer(World world) {
         super(world);
-        setEdad(75);
+        setAge(75);
         setSize(0.9F, 1.3F);
         setAdult(true);
         setTamed(false);
@@ -135,7 +135,7 @@ public class EntityDeer extends MoCEntityTameableAnimal {
     }
 
     @Override
-    public int getMaxEdad() {
+    public int getMaxAge() {
         return 130;
     }
 
@@ -193,6 +193,6 @@ public class EntityDeer extends MoCEntityTameableAnimal {
         if (getType() == 2) {
             return 1.3F;
         }
-        return getEdad() * 0.01F;
+        return getAge() * 0.01F;
     }
 }

@@ -5,15 +5,13 @@ import java.util.HashSet;
 import java.util.List;
 
 import com.ferreusveritas.mocreatures.entity.IMoCEntity;
-import com.ferreusveritas.mocreatures.entity.IMoCTameable;
 import com.ferreusveritas.mocreatures.entity.MoCEntityAnimal;
 import com.ferreusveritas.mocreatures.entity.ambient.EntityMaggot;
 import com.ferreusveritas.mocreatures.entity.monster.EntityOgre;
+import com.ferreusveritas.mocreatures.entity.passive.EntityPredatorMount;
 import com.ferreusveritas.mocreatures.init.MoCItems;
 import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
 import com.ferreusveritas.mocreatures.inventory.MoCAnimalChest;
-import com.ferreusveritas.mocreatures.network.MoCMessageHandler;
-import com.ferreusveritas.mocreatures.network.message.MoCMessageNameGUI;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -35,7 +33,6 @@ import net.minecraft.entity.passive.EntitySquid;
 import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.entity.passive.EntityWolf;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.init.MobEffects;
@@ -56,8 +53,6 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.TextComponentTranslation;
-import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -81,6 +76,17 @@ public class MoCTools {
 		}
 		dropCustomItem(entity, world, new ItemStack(Items.SADDLE, 1));
 		entity.setRideable(false);
+	}
+
+	public static void dropSaddle(EntityTameable entity, World world) {
+		if(entity instanceof EntityPredatorMount) {
+			EntityPredatorMount entitybc = (EntityPredatorMount) entity;
+			if (!entitybc.getIsRideable() || world.isRemote) {
+				return;
+			}
+			dropCustomItem(entity, world, new ItemStack(Items.SADDLE, 1));
+			entitybc.setRideable(false);
+		}
 	}
 
 	/**
@@ -679,63 +685,8 @@ public class MoCTools {
 		mystack[3] = player.getItemStackFromSlot(EntityEquipmentSlot.HEAD); //helmet
 		
 	}
-
-
-	/**
-	 * Method called to tame an entity, it will check that the player has slots
-	 * for taming, increase the taming count of the player, add the
-	 * player.getName() as the owner of the entity, and name the entity.
-	 *
-	 * @param ep
-	 * @param storedCreature
-	 * @return
-	 */
-	public static boolean tameWithName(EntityPlayer ep, IMoCTameable storedCreature) {
-		if (ep == null) {
-			return false;
-		}
-
-		if (MoCreatures.proxy.enableOwnership) {
-			if (storedCreature == null) {
-				ep.sendMessage(new TextComponentTranslation(TextFormatting.RED + "ERROR:" + TextFormatting.WHITE
-						+ "The stored creature is NULL and could not be created. Report to admin."));
-				return false;
-			}
-			int max = 0;
-			max = MoCreatures.proxy.maxTamed;
-			// only check count for new pets as owners may be changing the name
-			if (!MoCreatures.instance.mapData.isExistingPet(ep.getUniqueID(), storedCreature)) {
-				int count = MoCTools.numberTamedByPlayer(ep);
-				if (isThisPlayerAnOP(ep)) {
-					max = MoCreatures.proxy.maxOPTamed;
-				}
-				if (count >= max) {
-					String message = "\2474" + ep.getName() + " can not tame more creatures, limit of " + max + " reached";
-					ep.sendMessage(new TextComponentTranslation(message));
-					return false;
-				}
-			}
-		}
-
-		storedCreature.setOwnerId(ep.getUniqueID()); // ALWAYS SET OWNER. Required for our new pet save system.
-		MoCMessageHandler.INSTANCE.sendTo(new MoCMessageNameGUI(((Entity) storedCreature).getEntityId()), (EntityPlayerMP) ep);
-		storedCreature.setTamed(true);
-		// Required to update petId data for pet amulets
-		if (MoCreatures.instance.mapData != null && storedCreature.getOwnerPetId() == -1) {
-			MoCreatures.instance.mapData.updateOwnerPet(storedCreature);
-		}
-		return true;
-	}
-
-	public static int numberTamedByPlayer(EntityPlayer ep) {
-		if (MoCreatures.instance.mapData != null) {
-			if (MoCreatures.instance.mapData.getPetData(ep.getUniqueID()) != null) {
-				return MoCreatures.instance.mapData.getPetData(ep.getUniqueID()).getTamedList().tagCount();
-			}
-		}
-		return 0;
-	}
-
+	
+	
 	/**
 	 * Destroys blocks in front of entity
 	 *
@@ -837,12 +788,10 @@ public class MoCTools {
 				nbtt.setUniqueId("OwnerUUID", player.getUniqueID());
 				nbtt.setString("OwnerName", player.getName());
 				nbtt.setFloat("Health", ((EntityLiving) entity).getHealth());
-				nbtt.setInteger("Edad", entity.getEdad());
-				nbtt.setString("Name", entity.getPetName());
+				//nbtt.setInteger("Edad", entity.getEdad());
+				//nbtt.setString("Name", entity.getPetName());
 				nbtt.setInteger("CreatureType", entity.getType());
 				nbtt.setBoolean("Adult", entity.getIsAdult());
-				nbtt.setInteger("PetId", entity.getOwnerPetId());
-				nbtt.setBoolean("Ghost", amuletType == 3 ? true : false);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

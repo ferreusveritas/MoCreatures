@@ -6,7 +6,7 @@ import java.util.Map;
 import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.MoCreatures;
 import com.ferreusveritas.mocreatures.entity.MoCEntityMob;
-import com.ferreusveritas.mocreatures.entity.ai.EntityAIFleeFromPlayer;
+import com.ferreusveritas.mocreatures.entity.ai.EntityAIAvoidPlayer;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAINearestAttackableTargetMoC;
 import com.ferreusveritas.mocreatures.entity.aquatic.EnumEgg;
 import com.ferreusveritas.mocreatures.entity.passive.EntityPetScorpion;
@@ -110,7 +110,7 @@ public class EntityScorpion extends MoCEntityMob {
 		this.tasks.addTask(1, new EntityAIAttackMelee(this, 1.0, true));
 		this.tasks.addTask(2, new EntityAIRestrictSun(this));
 		this.tasks.addTask(7, new EntityAIFleeSun(this, 1.0));
-		this.tasks.addTask(5, new EntityAIFleeFromPlayer(this, 1.2, 4.0));
+		this.tasks.addTask(5, new EntityAIAvoidPlayer(this, 4.0f, 1.2, 1.2));
 		this.tasks.addTask(6, new EntityAILeapAtTarget(this, 0.4f));
 		this.targetTasks.addTask(1, new EntityAINearestAttackableTargetMoC(this, EntityPlayer.class, true));
 	}
@@ -326,7 +326,7 @@ public class EntityScorpion extends MoCEntityMob {
 				EntityPetScorpion entityscorpy = new EntityPetScorpion(this.world);
 				entityscorpy.setPosition(this.posX, this.posY, this.posZ);
 				entityscorpy.setAdult(false);
-				entityscorpy.setEdad(20);
+				entityscorpy.setAge(20);
 				entityscorpy.setType(getType());
 				this.world.spawnEntity(entityscorpy);
 				MoCTools.playCustomSound(entityscorpy, SoundEvents.ENTITY_CHICKEN_EGG);

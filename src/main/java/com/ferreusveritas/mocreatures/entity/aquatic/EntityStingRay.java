@@ -25,7 +25,7 @@ public class EntityStingRay extends EntityRay {
 	public EntityStingRay(World world) {
 		super(world);
 		setSize(1.2F, 0.5F);
-		setEdad(50 + (rand.nextInt(40)));
+		//setEdad(50 + (rand.nextInt(40)));
 		setTexture("stingray");
 	}
 

@@ -1,9 +1,10 @@
 package com.ferreusveritas.mocreatures.entity.aquatic;
 
-import com.ferreusveritas.mocreatures.entity.MoCEntityTameableAquatic;
+import com.ferreusveritas.mocreatures.entity.MoCEntityAquatic;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAINearestAttackableTargetMoC;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
 import com.ferreusveritas.mocreatures.init.MoCItems;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -14,12 +15,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.DamageSource;
 import net.minecraft.world.World;
 
-public class EntityShark extends MoCEntityTameableAquatic {
+public class EntityShark extends MoCEntityAquatic {
 
 	public EntityShark(World world) {
 		super(world);
 		setSize(1.7F, 0.8F);
-		setEdad(60 + this.rand.nextInt(100));
+		//setEdad(60 + this.rand.nextInt(100));
 		setTexture("shark");
 	}
 
@@ -70,7 +71,7 @@ public class EntityShark extends MoCEntityTameableAquatic {
 			for (int l = 0; l < j; l++) {
 				entityDropItem(new ItemStack(MoCItems.sharkteeth, 1, 0), 0.0F);
 			}
-		} else if ((this.world.getDifficulty().getDifficultyId() > 0) && (getEdad() > 150)) {
+		} else if ((this.world.getDifficulty().getDifficultyId() > 0) /*&& (getEdad() > 150)*/) {
 			int k = this.rand.nextInt(3);
 			for (int i1 = 0; i1 < k; i1++) {
 				entityDropItem(new ItemStack(MoCItems.mocegg, 1, 11), 0.0F);
@@ -114,10 +115,10 @@ public class EntityShark extends MoCEntityTameableAquatic {
 		super.onLivingUpdate();
 		if (!this.world.isRemote) {
 			if (!getIsAdult() && (this.rand.nextInt(50) == 0)) {
-				setEdad(getEdad() + 1);
+				/*setEdad(getEdad() + 1);
 				if (getEdad() >= 200) {
 					setAdult(true);
-				}
+				}*/
 			}
 		}
 	}
@@ -169,11 +170,6 @@ public class EntityShark extends MoCEntityTameableAquatic {
 	@Override
 	public boolean isNotScared() {
 		return true;
-	}
-	
-	@Override
-	public int nameYOffset() {
-		return -50;
 	}
 
 }

@@ -1,12 +1,11 @@
 package com.ferreusveritas.mocreatures.entity.aquatic;
 
-import com.ferreusveritas.mocreatures.entity.MoCEntityTameableAquatic;
+import com.ferreusveritas.mocreatures.entity.MoCEntityAquatic;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.EnumHand;
+
 import net.minecraft.world.World;
 
-public class EntityRay extends MoCEntityTameableAquatic {
+public class EntityRay extends MoCEntityAquatic {
 
 	public EntityRay(World world) {
 		super(world);
@@ -22,36 +21,11 @@ public class EntityRay extends MoCEntityTameableAquatic {
 	}
 
 	@Override
-	public boolean processInteract(EntityPlayer player, EnumHand hand) {
-		final Boolean tameResult = this.processTameInteract(player, hand);
-		if (tameResult != null) {
-			return tameResult;
-		}
-
-		if (!this.isBeingRidden() && getType() == 1) {
-			if (!this.world.isRemote && player.startRiding(this)) {
-				player.rotationYaw = this.rotationYaw;
-				player.rotationPitch = this.rotationPitch;
-				player.posY = this.posY;
-			}
-
-			return true;
-		}
-
-		return super.processInteract(player, hand);
-	}
-
-	@Override
 	public float getAdjustedYOffset() {
 		if (!this.isInWater()) {
 			return 0.09F;
 		}
 		return 0.15F;
-	}
-
-	@Override
-	public int nameYOffset() {
-		return -25;
 	}
 
 	@Override
@@ -66,11 +40,12 @@ public class EntityRay extends MoCEntityTameableAquatic {
 
 	@Override
 	public float getSizeFactor() {
-		float f = getEdad() * 0.01F;
+		return 1.0f;
+		/*float f = getEdad() * 0.01F;
 		if (f > 1.5F) {
 			f = 1.5F;
 		}
-		return f;
+		return f;*/
 	}
 
 	@Override

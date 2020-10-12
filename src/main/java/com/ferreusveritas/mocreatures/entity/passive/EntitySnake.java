@@ -5,8 +5,8 @@ import java.util.Map;
 
 import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.MoCreatures;
-import com.ferreusveritas.mocreatures.entity.MoCEntityTameableAnimal;
-import com.ferreusveritas.mocreatures.entity.ai.EntityAIFleeFromPlayer;
+import com.ferreusveritas.mocreatures.entity.MoCEntityAnimal;
+import com.ferreusveritas.mocreatures.entity.ai.EntityAIAvoidPlayer;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIHunt;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAINearestAttackableTargetMoC;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIPanicMoC;
@@ -31,7 +31,6 @@ import net.minecraft.init.MobEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.BlockPos;
@@ -52,7 +51,7 @@ import net.minecraftforge.fml.common.network.NetworkRegistry.TargetPoint;
  *
  */
 
-public class EntitySnake extends MoCEntityTameableAnimal {
+public class EntitySnake extends MoCEntityAnimal {
 
 	private float fTongue;
 	private float fMouth;
@@ -109,7 +108,7 @@ public class EntitySnake extends MoCEntityTameableAnimal {
 		setSize(1.4F, 0.5F);
 		this.bodyswing = 2F;
 		this.movInt = this.rand.nextInt(10);
-		setEdad(50 + this.rand.nextInt(50));
+		setAge(50 + this.rand.nextInt(50));
 	}
 
 	public void setType(SnakeType type) {
@@ -123,7 +122,7 @@ public class EntitySnake extends MoCEntityTameableAnimal {
 	@Override
 	protected void initEntityAI() {
 		this.tasks.addTask(2, new EntityAIPanicMoC(this, 0.8D));
-		this.tasks.addTask(3, new EntityAIFleeFromPlayer(this, 0.8D, 4D));
+		this.tasks.addTask(3, new EntityAIAvoidPlayer(this, 4.0f, 0.8, 0.8));
 		this.tasks.addTask(4, new EntityAIAttackMelee(this, 1.0D, true));
 		this.tasks.addTask(5, new EntityAIWanderMoC2(this, 0.8D, 30));
 		this.tasks.addTask(9, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
@@ -143,15 +142,6 @@ public class EntitySnake extends MoCEntityTameableAnimal {
 	@Override
 	public void selectType() {
 		checkSpawningBiome();
-		// snake types:
-		// 1 small blackish/dark snake (passive)
-		// 2 dark green /brown snake (passive)
-		// 3 bright orangy snake aggressive venomous swamp, jungle, forest
-		// 4 bright green snake aggressive venomous swamp, jungle, forest
-		// 5 coral (aggressive - venomous) small / plains, forest
-		// 6 cobra (aggressive - venomous - spitting) plains, forest
-		// 7 rattlesnake (aggressive - venomous) desert
-		// 8 python (aggressive - non venomous) big - swamp
 		if (getType() == 0) {
 			setType(this.rand.nextInt(8) + 1);
 		}
@@ -204,30 +194,8 @@ public class EntitySnake extends MoCEntityTameableAnimal {
 	}
 
 	@Override
-	public boolean processInteract(EntityPlayer player, EnumHand hand) {
-		final Boolean tameResult = this.processTameInteract(player, hand);
-		if (tameResult != null) {
-			return tameResult;
-		}
-
-		if (!getIsTamed()) {
-			return false;
-		}
-
-		if (this.getRidingEntity() == null) {
-			if (this.startRiding(player)) {
-				this.rotationYaw = player.rotationYaw;
-			}
-
-			return true;
-		}
-
-		return super.processInteract(player, hand);
-	}
-
-	@Override
 	public boolean isNotScared() {
-		return getSnakeType().aggressive && getEdad() > 50;
+		return getSnakeType().aggressive && getAge() > 50;
 	}
 
 	/**
@@ -295,7 +263,7 @@ public class EntitySnake extends MoCEntityTameableAnimal {
 		{
 			factor = 1.5F;
 		}
-		return this.getEdad() * 0.01F * factor;
+		return this.getAge() * 0.01F * factor;
 	}
 
 	@Override
@@ -547,7 +515,7 @@ public class EntitySnake extends MoCEntityTameableAnimal {
 
 	@Override
 	protected void dropFewItems(boolean flag, int x) {
-		if (getEdad() > 60) {
+		if (getAge() > 60) {
 			int j = this.rand.nextInt(3);
 			for (int l = 0; l < j; l++) {
 				entityDropItem(new ItemStack(MoCItems.mocegg, 1, getSnakeType().egg.eggNum), 0.0F);
@@ -650,11 +618,6 @@ public class EntitySnake extends MoCEntityTameableAnimal {
 	}
 
 	@Override
-	public int nameYOffset() {
-		return -30;
-	}
-
-	@Override
 	public boolean isMyHealFood(ItemStack stack) {
 		return !stack.isEmpty() && (stack.getItem() == Items.CHICKEN);
 	}
@@ -705,6 +668,6 @@ public class EntitySnake extends MoCEntityTameableAnimal {
 	@Override
 	protected double maxDivingDepth()
 	{
-		return 1D * (this.getEdad()/100D);
+		return 1D * (this.getAge()/100D);
 	}
 }

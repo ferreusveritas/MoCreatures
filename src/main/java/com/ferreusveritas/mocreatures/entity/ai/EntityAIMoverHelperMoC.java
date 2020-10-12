@@ -1,8 +1,10 @@
 package com.ferreusveritas.mocreatures.entity.ai;
 
+import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.entity.IMoCEntity;
 import com.ferreusveritas.mocreatures.entity.MoCEntityAquatic;
-import com.ferreusveritas.mocreatures.MoCTools;
+import com.ferreusveritas.mocreatures.entity.aquatic.EntityPredatorMountAquatic;
+
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -146,7 +148,12 @@ public class EntityAIMoverHelperMoC extends EntityMoveHelper {
 
 	@Override
 	public void onUpdateMoveHelper() {
-		boolean isFlyer = ((IMoCEntity) theCreature).isFlyer();
+		boolean isFlyer = false;
+		
+		if(theCreature instanceof IMoCEntity) {
+			isFlyer = ((IMoCEntity) theCreature).isFlyer();	
+		}
+				
 		boolean isSwimmer = this.theCreature.isInWater(); 
 		float fLimitAngle = 90F;
 		if (!isFlyer && !isSwimmer) {
@@ -236,8 +243,16 @@ public class EntityAIMoverHelperMoC extends EntityMoveHelper {
 		}
 
 		double distToSurface = MoCTools.distanceToSurface(theCreature);
-		double divingDepth = ((IMoCEntity) theCreature).getDivingDepth();
-
+		
+		double divingDepth = 1.0;
+		
+		if(theCreature instanceof IMoCEntity) {
+			divingDepth = ((IMoCEntity) theCreature).getDivingDepth();
+		} else
+		if(theCreature instanceof EntityPredatorMountAquatic) {
+			divingDepth = ((EntityPredatorMountAquatic) theCreature).getDivingDepth();
+		}
+		
 		double delta = distToSurface - divingDepth;
 		
 		if (delta > 0) { //We're too deep.  Move up a bit
@@ -255,7 +270,7 @@ public class EntityAIMoverHelperMoC extends EntityMoveHelper {
 		if (!theCreature.getNavigator().noPath() && theCreature.collidedHorizontally) {
 			if (theCreature instanceof MoCEntityAquatic) {
 				theCreature.motionY = 0.05D;
-			} else {
+			} else if(theCreature instanceof IMoCEntity){
 				((IMoCEntity) theCreature).forceEntityJump();
 			}
 		}

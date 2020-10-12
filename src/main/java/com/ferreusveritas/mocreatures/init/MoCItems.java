@@ -46,8 +46,6 @@ public class MoCItems {
 	public static final MoCItem bigcatclaw = new MoCItem("bigcatclaw");
 	public static final MoCItem whip = new MoCItemWhip("whip");
 
-	public static final MoCItem medallion = new MoCItem("medallion");
-
 	public static final MoCItem hideCroc = new MoCItem("reptilehide");
 	public static final MoCItem fur = new MoCItem("fur");
 
@@ -85,11 +83,7 @@ public class MoCItems {
 	public static final MoCItem elephantGarment = new MoCItem("elephantgarment");
 	public static final MoCItem elephantHowdah = new MoCItem("elephanthowdah");
 	public static final MoCItem mammothPlatform = new MoCItem("mammothplatform");
-
-	public static final MoCItem scrollFreedom = new MoCItem("scrolloffreedom");
-	public static final MoCItem scrollOfSale = new MoCItem("scrollofsale");
-	public static final MoCItem scrollOfOwner = new MoCItem("scrollofowner");
-
+	
 	@Mod.EventBusSubscriber(modid = MoCConstants.MOD_ID)
 	public static class RegistrationHandler {
 		/**
@@ -106,7 +100,6 @@ public class MoCItems {
 					mocegg,
 					bigcatclaw,
 					whip,
-					medallion,
 					hideCroc,
 					plateCroc,
 					helmetCroc,
@@ -137,11 +130,8 @@ public class MoCItems {
 					elephantGarment,
 					elephantHarness,
 					elephantHowdah,
-					mammothPlatform,
+					mammothPlatform
 
-					scrollFreedom,
-					scrollOfSale,
-					scrollOfOwner
 			}));
 
 			final IForgeRegistry<Item> registry = event.getRegistry();

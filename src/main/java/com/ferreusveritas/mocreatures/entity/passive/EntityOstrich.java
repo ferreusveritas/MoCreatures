@@ -3,22 +3,33 @@ package com.ferreusveritas.mocreatures.entity.passive;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.MoCreatures;
-import com.ferreusveritas.mocreatures.entity.MoCEntityTameableAnimal;
+import com.ferreusveritas.mocreatures.entity.EntityAnimalComp;
+import com.ferreusveritas.mocreatures.entity.Gender;
+import com.ferreusveritas.mocreatures.entity.IGender;
+import com.ferreusveritas.mocreatures.entity.IModelRenderInfo;
+import com.ferreusveritas.mocreatures.entity.ITame;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIFollowAdult;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
+import com.ferreusveritas.mocreatures.entity.components.ComponentChest;
+import com.ferreusveritas.mocreatures.entity.components.ComponentGender;
+import com.ferreusveritas.mocreatures.entity.components.ComponentHealFood;
+import com.ferreusveritas.mocreatures.entity.components.ComponentLoader;
+import com.ferreusveritas.mocreatures.entity.components.ComponentRide;
+import com.ferreusveritas.mocreatures.entity.components.ComponentSit;
+import com.ferreusveritas.mocreatures.entity.components.ComponentTame;
+import com.ferreusveritas.mocreatures.entity.components.ComponentTameFood;
 import com.ferreusveritas.mocreatures.entity.item.MoCEntityEgg;
 import com.ferreusveritas.mocreatures.init.MoCItems;
 import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
-import com.ferreusveritas.mocreatures.inventory.MoCAnimalChest;
-import com.ferreusveritas.mocreatures.network.MoCMessageHandler;
-import com.ferreusveritas.mocreatures.network.message.MoCMessageAnimation;
+import com.ferreusveritas.mocreatures.util.Util;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.EnumCreatureAttribute;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIAttackMelee;
 import net.minecraft.entity.ai.EntityAISwimming;
@@ -33,207 +44,257 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.pathfinding.Path;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.common.network.NetworkRegistry.TargetPoint;
 
-public class EntityOstrich extends MoCEntityTameableAnimal {
-
-	private int eggCounter;
-	private int hidingCounter;
-	public int mouthCounter;
-	public int wingCounter;
-	public int sprintCounter;
-	public int jumpCounter;
-	public int transformCounter;
-	public int transformType;
-	public boolean canLayEggs;
-
-	public MoCAnimalChest localchest;
-	public ItemStack localstack;
-	private static final DataParameter<Boolean> RIDEABLE = EntityDataManager.<Boolean>createKey(EntityOstrich.class, DataSerializers.BOOLEAN);
-	private static final DataParameter<Boolean> EGG_WATCH = EntityDataManager.<Boolean>createKey(EntityOstrich.class, DataSerializers.BOOLEAN);
-	private static final DataParameter<Boolean> CHESTED = EntityDataManager.<Boolean>createKey(EntityOstrich.class, DataSerializers.BOOLEAN);
-	private static final DataParameter<Boolean> IS_HIDING = EntityDataManager.<Boolean>createKey(EntityOstrich.class, DataSerializers.BOOLEAN);
-	private static final DataParameter<Integer> HELMET_TYPE = EntityDataManager.<Integer>createKey(EntityOstrich.class, DataSerializers.VARINT);
-	private static final DataParameter<Integer> FLAG_COLOR = EntityDataManager.<Integer>createKey(EntityOstrich.class, DataSerializers.VARINT);
-
-	private static Map<Integer, OstrichType> map = new HashMap<>();
+public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, IModelRenderInfo {
 	
-	public static enum OstrichType {
-		None(0, 20, 1.0f),
-		Chick(1, 10, 0.8f),
-		Female(2, 20, 0.8f),
-		Male(3, 25, 1.1f);
+	public static ComponentLoader<EntityOstrich> loader = new ComponentLoader<>(
+			animal -> new ComponentTameFood<>(EntityOstrich.class, animal, (a, s) -> s.getItem() == Items.CHICKEN),
+			animal -> new ComponentGender<>(EntityOstrich.class, animal),
+			animal -> new ComponentRide<>(EntityOstrich.class, animal),
+			animal -> new ComponentHealFood<>(EntityOstrich.class, animal, true, (a, s) -> a.isMyHealFood(s) ? 4 : 0),
+			animal -> new ComponentChest(EntityOstrich.class, animal, "OstrichChest"),
+			animal -> new ComponentSit<>(EntityOstrich.class, animal)
+			);
 
-		public final int type;
-		public final int hp;
-		public final float speed;
-
-		private OstrichType(int type, int hp, float speed) {
-			this.type = type;
-			this.hp = hp;
-			this.speed = speed;
-			map.put(type, this);
-		}
-	}
-
+	
+	private static final DataParameter<Byte> FLAG_COLOR = EntityDataManager.<Byte>createKey(EntityOstrich.class, DataSerializers.BYTE);
+	
 	public EntityOstrich(World world) {
 		super(world);
 		setSize(1.0F, 1.6F);
-		setEdad(35);
-		this.eggCounter = this.rand.nextInt(1000) + 1000;
-		this.stepHeight = 1.0F;
-		this.canLayEggs = false;
+		eggCounter = rand.nextInt(1000) + 1000;
+		stepHeight = 1.0F;
+		canLayEggs = false;
+		
+		tame = getComponent(ComponentTame.class);
+		gender = getComponent(ComponentGender.class);
+		ride = getComponent(ComponentRide.class);
+		healfood = getComponent(ComponentHealFood.class);
+		chest = getComponent(ComponentChest.class);
+		sit = getComponent(ComponentSit.class);
 	}
-
-	public void setType(OstrichType type) {
-		setType(type.type);
-	}
-
-	public OstrichType getOstrich() {
-		return map.getOrDefault(getType(), OstrichType.None);
-	}
-
-	@Override
-	protected void initEntityAI() {
-		this.tasks.addTask(1, new EntityAISwimming(this));
-		this.tasks.addTask(4, new EntityAIFollowAdult(this, 1.0D));
-		this.tasks.addTask(5, new EntityAIAttackMelee(this, 1.0D, true));
-		this.tasks.addTask(6, new EntityAIWanderMoC2(this, 1.0D));
-		this.tasks.addTask(7, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
-	}
-
-	@Override
-	protected void applyEntityAttributes() {
-		super.applyEntityAttributes();
-		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(20);
-		this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.25D);
-		this.getAttributeMap().registerAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);
-		this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(3.0D);
-	}
-
+	
 	@Override
 	protected void entityInit() {
 		super.entityInit();
-		this.dataManager.register(EGG_WATCH, Boolean.valueOf(false));
-		this.dataManager.register(CHESTED, Boolean.valueOf(false));
-		this.dataManager.register(RIDEABLE, Boolean.valueOf(false));
-		this.dataManager.register(IS_HIDING, Boolean.valueOf(false));
-		this.dataManager.register(HELMET_TYPE, Integer.valueOf(0));
-		this.dataManager.register(FLAG_COLOR, Integer.valueOf(0));
+		dataManager.register(EGG_WATCH, Boolean.valueOf(false));
+		dataManager.register(FLAG_COLOR, Byte.valueOf((byte) -1));
 	}
-
+	
 	@Override
-	public boolean getIsRideable() {
-		return ((Boolean)this.dataManager.get(RIDEABLE)).booleanValue();
+	public void onLivingUpdate() {
+		super.onLivingUpdate();
+		
+		if (getHiding()) {
+			prevRenderYawOffset = renderYawOffset = rotationYaw = prevRotationYaw;
+		}
+		
+		updateAnimations();
+		
+		if (sprintCounter > 0 && ++sprintCounter > 300) {
+			sprintCounter = 0;
+		}
+		
+		if (!world.isRemote) {
+			updateSitting();
+			updateEggWatching();
+		}
 	}
-
+	
 	@Override
-	public void setRideable(boolean flag) {
-		this.dataManager.set(RIDEABLE, Boolean.valueOf(flag));
+	public boolean processInteract(EntityPlayer player, EnumHand hand) {
+		final ItemStack stack = player.getHeldItem(hand);
+		return 
+				eggLayingInteraction(player, hand, stack) || 
+				flagInteraction(player, hand, stack) || 
+				handleHelmetInteraction(player, hand, stack) ||
+				super.processInteract(player, hand);
 	}
-
-	public boolean getEggWatching() {
-		return ((Boolean)this.dataManager.get(EGG_WATCH)).booleanValue();
-	}
-
-	public void setEggWatching(boolean flag) {
-		this.dataManager.set(EGG_WATCH, Boolean.valueOf(flag));
-	}
-
-	public boolean getHiding() {
-		return ((Boolean)this.dataManager.get(IS_HIDING)).booleanValue();
-	}
-
-	public void setHiding(boolean flag) {
-		this.dataManager.set(IS_HIDING, Boolean.valueOf(flag));
-	}
-
-	public int getHelmet() {
-		return ((Integer)this.dataManager.get(HELMET_TYPE)).intValue();
-	}
-
-	public void setHelmet(int i) {
-		this.dataManager.set(HELMET_TYPE, Integer.valueOf(i));
-	}
-
-	public int getFlagColor() {
-		return ((Integer)this.dataManager.get(FLAG_COLOR)).intValue();
-	}
-
-	public void setFlagColor(int i) {
-		this.dataManager.set(FLAG_COLOR, Integer.valueOf(i));
-	}
-
-	public boolean getIsChested() {
-		return ((Boolean)this.dataManager.get(CHESTED)).booleanValue();
-	}
-
-	public void setIsChested(boolean flag) {
-		this.dataManager.set(CHESTED, Boolean.valueOf(flag));
-	}
-
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Attributes
+	////////////////////////////////////////////////////////////////
+	
 	@Override
-	public boolean isMovementCeased() {
-		return (getHiding() || this.isBeingRidden());
+	protected void applyEntityAttributes() {
+		super.applyEntityAttributes();
+		getAttributeMap().registerAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);
 	}
-
+	
 	@Override
-	public boolean isNotScared() {
-		return (getType() == 2 && getAttackTarget() != null) || (getType() > 2);
+	public void setupAttributes() {
+		if(getGender() == Gender.None) {
+			setGender(rand.nextInt(2) == 0 ? Gender.Male : Gender.Female); 
+		}
+		
+		getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(calculateMaxHealth());
+		getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(calculateAttackDmg());
+		getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(getFollowRange());
+		getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(getMoveSpeed());
+		setHealth(getMaxHealth());
+		
+		super.setupAttributes();
 	}
-
+	
+	public double calculateAttackDmg() {
+		return 3.0;
+	}
+	
+	//TODO: Change max health when animals becomes an adult
+	public float calculateMaxHealth() {
+		return 30.0f; 
+	}
+	
+	/** Returns the distance at which the animal attacks prey */
+	public double getFollowRange() {
+		return 6.0;
+	}
+	
+	public float getMoveSpeed() {
+		return 0.25f;
+	}
+	
+	
+	////////////////////////////////////////////////////////////////
+	// AI
+	////////////////////////////////////////////////////////////////
+	
 	@Override
-	public boolean attackEntityFrom(DamageSource damagesource, float i) {
-		//dmg reduction
-		if (getIsTamed() && getHelmet() != 0) {
-			int j = 0;
-			switch (getHelmet()) {
-				case 1:
-					j = 1;
-					break;
-				case 5:
-				case 6:
-				case 2:
-					j = 2;
-					break;
-				case 7:
-				case 3:
-					j = 3;
-					break;
-				case 4:
-				case 9:
-				case 10:
-				case 11:
-				case 12:
-					j = 4;
-					break;
+	protected void initEntityAI() {
+		tasks.addTask(1, new EntityAISwimming(this));
+		tasks.addTask(4, new EntityAIFollowAdult(this, 1.0D));
+		tasks.addTask(5, new EntityAIAttackMelee(this, 1.0D, true));
+		tasks.addTask(6, new EntityAIWanderMoC2(this, 1.0D));
+		tasks.addTask(7, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
+	}
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Movement Special
+	////////////////////////////////////////////////////////////////
+	
+	public int sprintCounter;
+	
+	@Override
+	public void setJumpPending(boolean val) {
+		if(val) {
+			if(jumpCounter > 5) {
+				jumpCounter = 1;
 			}
-			i -= j;
-			if (i <= 0) {
-				i = 1;
+			if(jumpCounter == 0) {
+				MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_WINGFLAP);
+				super.setJumpPending(val);
+				jumpCounter = 1;
+			}
+		} else {
+			super.setJumpPending(val);
+		}
+	}
+	
+	public boolean isMovementCeased() {
+		return (getHiding() || isBeingRidden());
+	}
+	
+	@Override
+	public boolean canBeCollidedWith() {
+		return !isBeingRidden();
+	}
+	
+	public boolean isOnAir() {
+		return (world.isAirBlock(new BlockPos(MathHelper.floor(posX), MathHelper.floor(posY - 0.2D), MathHelper.floor(posZ))) && 
+				world.isAirBlock(new BlockPos(MathHelper.floor(posX), MathHelper.floor(posY - 1.2D), MathHelper.floor(posZ))) );
+	}
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Healing
+	////////////////////////////////////////////////////////////////
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Food
+	////////////////////////////////////////////////////////////////
+	
+	public boolean isMyHealFood(ItemStack par1ItemStack) {
+		return MoCTools.isItemEdible(par1ItemStack.getItem());
+	}
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Death
+	////////////////////////////////////////////////////////////////
+	
+	@Override
+	public void onDeath(DamageSource cause) {
+		super.onDeath(cause);
+		dropFlag();
+		dropHelmet();
+	}
+	
+	@Override
+	protected Item getDropItem() {
+		return Items.FEATHER;
+	}
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Spawning
+	////////////////////////////////////////////////////////////////
+	
+	@Override
+	public boolean getCanSpawnHere() {
+		return super.getCanSpawnHere();
+		
+		//spawns in deserts and plains
+		//return getCanSpawnHereCreature() && getCanSpawnHereLiving();
+	}
+	
+	@Override
+	public int getMaxSpawnedInChunk() {
+		return 1;
+	}
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Swimming
+	////////////////////////////////////////////////////////////////
+	
+	////////////////////////////////////////////////////////////////
+	// Hunting/Attacking
+	////////////////////////////////////////////////////////////////
+	
+	@Override
+	public boolean attackEntityFrom(DamageSource source, float amount) {
+		OstrichHelmetType helm = getHelmet();
+		
+		if (isTamed() && helm != OstrichHelmetType.None) {
+			amount -= helm.dmgReduction;
+			if (amount <= 0) {
+				amount = 1;
 			}
 		}
-
-		if (super.attackEntityFrom(damagesource, i)) {
-			Entity entity = damagesource.getTrueSource();
-
-			if (!(entity instanceof EntityLivingBase) || ((this.isBeingRidden()) && (entity == this.getRidingEntity()))
-					|| (entity instanceof EntityPlayer && getIsTamed())) {
+		
+		if (super.attackEntityFrom(source, amount)) {
+			Entity entity = source.getTrueSource();
+			
+			if (!(entity instanceof EntityLivingBase) || ((isBeingRidden()) && (entity == getRidingEntity()))
+					|| (entity instanceof EntityPlayer && isTamed())) {
 				return false;
 			}
-
-			if ((entity != this) && (super.shouldAttackPlayers()) && getType() > 2) {
+			
+			if ((entity != this) && shouldAttackPlayers() && isAdult() && getGender() == Gender.Male) {
 				setAttackTarget((EntityLivingBase) entity);
 				flapWings();
 			}
@@ -242,13 +303,8 @@ public class EntityOstrich extends MoCEntityTameableAnimal {
 			return false;
 		}
 	}
-
-	@Override
-	public void onDeath(DamageSource damagesource) {
-		super.onDeath(damagesource);
-		dropMyStuff();
-	}
-
+	
+	
 	@Override
 	public boolean attackEntityAsMob(Entity entityIn) {
 		if (entityIn instanceof EntityPlayer && !shouldAttackPlayers()) {
@@ -258,608 +314,522 @@ public class EntityOstrich extends MoCEntityTameableAnimal {
 		flapWings();
 		return super.attackEntityAsMob(entityIn);
 	}
-
-	public float calculateMaxHealth() {
-		return getOstrich().hp; 
+	
+	public boolean isNotScared() {
+		return isAdult() && getGender() == Gender.Male && getAttackTarget() != null;
+	}
+	
+	public boolean shouldAttackPlayers() {
+		return true;
+	}
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Data
+	////////////////////////////////////////////////////////////////
+	
+	@Override
+	public void readEntityFromNBT(NBTTagCompound nbttagcompound) {
+		super.readEntityFromNBT(nbttagcompound);
+		setEggWatching(nbttagcompound.getBoolean("EggWatch"));
+		setFlagColor(nbttagcompound.getByte("FlagColor"));
 	}
 	
 	@Override
-	public boolean canBeCollidedWith() {
-		return !this.isBeingRidden();
+	public void writeEntityToNBT(NBTTagCompound nbttagcompound) {
+		super.writeEntityToNBT(nbttagcompound);
+		nbttagcompound.setBoolean("EggWatch", isEggWatching());
+		nbttagcompound.setByte("FlagColor", (byte) getFlagColor());
+	}
+	
+	
+	
+	////////////////////////////////////////////////////////////////
+	//
+	//--COMPONENTS--
+	//
+	////////////////////////////////////////////////////////////////
+	
+	@Override
+	protected void setupComponents() {
+		loader.assemble(this);
+	}
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Taming
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentTame tame;
+	
+	public boolean isTamed() { return tame.isTamed(); }
+	@Override public void setTamedBy(EntityPlayer player) { tame.setTamedBy(player); }
+	@Override public UUID getOwnerId() { return tame.getOwnerId(); }
+	@Override public Entity getOwner() { return tame.getOwner(); }
+	
+	
+	////////////////////////////////////////////////////////////////
+	//Age and Gender
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentGender gender;
+	
+	@Override public Gender getGender() { return gender.getGender(); }
+	@Override public void setGender(Gender g) { gender.setGender(g); }
+	
+	public int childhoodDuration() {
+		return 20 * 60 * 20;//20 minutes
 	}
 	
 	@Override
-	public void selectType() {
-		if (getOstrich() == OstrichType.None) {
-			/**
-			 * 1 = chick /2 = female /3 = male /4 = albino male /5 = nether ostrich /6 = wyvern
-			 */
-			int rnd = this.rand.nextInt(100);
-			if (rnd <= (20)) {
-				setType(OstrichType.Chick);
-			} else if (rnd <= (65)) {
-				setType(OstrichType.Female);
-			} else {
-				setType(OstrichType.Male);
-			}
-		}
-		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(calculateMaxHealth());
-		this.setHealth(getMaxHealth());
+	public EntityAgeable createChild(EntityAgeable ageable) {
+		return null;
 	}
-
-	@Override
-	public ResourceLocation getTexture() {
-		if (this.transformCounter != 0 && this.transformType > 4) {
-			String newText = "ostricha.png";
-
-			if ((this.transformCounter % 5) == 0) {
-				return MoCreatures.proxy.getTexture(newText);
-			}
-			if (this.transformCounter > 50 && (this.transformCounter % 3) == 0) {
-				return MoCreatures.proxy.getTexture(newText);
-			}
-
-			if (this.transformCounter > 75 && (this.transformCounter % 4) == 0) {
-				return MoCreatures.proxy.getTexture(newText);
-			}
-		}
-
-		switch (getOstrich()) {
-			case Chick:return MoCreatures.proxy.getTexture("ostrichc.png"); //chick
-			case Female:return MoCreatures.proxy.getTexture("ostrichb.png"); //female
-			case Male:return MoCreatures.proxy.getTexture("ostricha.png"); //male
-			case None:
-			default:return MoCreatures.proxy.getTexture("ostricha.png");
-		}
-		
-	}
-
+	
+	
+	////////////////////////////////////////////////////////////////
+	//Heal Food
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentHealFood healfood;
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Riding
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentRide ride;
+	
 	@Override
 	public double getCustomSpeed() {
-		OstrichType ostrich = getOstrich();
-		double OstrichSpeed = ostrich.speed;
+		double OstrichSpeed = getGender() == Gender.Male ? 1.1f : 0.8f;
 		
-		if (this.sprintCounter > 0 && this.sprintCounter < 200) {
+		if (sprintCounter > 0 && sprintCounter < 200) {
 			OstrichSpeed *= 1.5D;
 		}
-		if (this.sprintCounter > 200) {
+		if (sprintCounter > 200) {
 			OstrichSpeed *= 0.5D;
 		}
 		return OstrichSpeed;
 	}
-
+	
 	@Override
-	public boolean rideableEntity() {
-		return true;
+	public void travel(float strafe, float vertical, float forward) {
+		
+		if(isSitting() || ride.travel(strafe, vertical, forward)) {
+			return;
+		}
+		super.travel(strafe, vertical, forward);
 	}
-
+	
 	@Override
-	public void onUpdate() {
-		super.onUpdate();
-
+	public void updatePassenger(Entity passenger) {
+		double dist = getSizeFactor() * 0.25;
+		double radians = Math.toRadians(renderYawOffset);
+		double newPosX = posX + (dist * Math.sin(radians));
+		double newPosZ = posZ - (dist * Math.cos(radians));
+		passenger.setPosition(newPosX, posY + getMountedYOffset() + passenger.getYOffset(), newPosZ);
+	}
+	
+	@Override
+	public double getMountedYOffset() {
+		return 1.15 * getSizeFactor();
+	}
+	
+	public boolean isRideable() {
+		return ride.isRideable();
+	}
+	
+	@Override
+	public boolean shouldDismountInWater(Entity rider) {
+		return false;
+	}
+	
+	
+	////////////////////////////////////////////////////////////////
+	//Sitting
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentSit sit;
+	private int hidingCounter;
+	
+	protected void updateSitting() {
+		
 		if (getHiding()) {
-			this.prevRenderYawOffset = this.renderYawOffset = this.rotationYaw = this.prevRotationYaw;
-		}
-
-		if (this.mouthCounter > 0 && ++this.mouthCounter > 20) {
-			this.mouthCounter = 0;
-		}
-
-		if (this.wingCounter > 0 && ++this.wingCounter > 80) {
-			this.wingCounter = 0;
-		}
-
-		if (this.jumpCounter > 0 && ++this.jumpCounter > 8) {
-			this.jumpCounter = 0;
-		}
-
-		if (this.sprintCounter > 0 && ++this.sprintCounter > 300) {
-			this.sprintCounter = 0;
-		}
-
-		if (this.transformCounter > 0) {
-			if (this.transformCounter == 40) {
-				MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_TRANSFORM);
+			//wild shy ostriches will hide their heads only for a short term
+			//tamed ostriches will keep their heads hidden until the whip is used again
+			if (++hidingCounter > 500 && !isTamed()) {
+				setSitting(false);
+				hidingCounter = 0;
 			}
-
-			if (++this.transformCounter > 100) {
-				this.transformCounter = 0;
-				if (this.transformType != 0) {
-					dropArmor();
-					setType(this.transformType);
-					selectType();
-				}
-			}
+			
 		}
+		
 	}
-
-	public void transform(int tType) {
-		if (!this.world.isRemote) {
-			MoCMessageHandler.INSTANCE.sendToAllAround(new MoCMessageAnimation(this.getEntityId(), tType),
-					new TargetPoint(this.world.provider.getDimensionType().getId(), this.posX, this.posY, this.posZ, 64));
-		}
-		this.transformType = tType;
-		if (!this.isBeingRidden() && this.transformType != 0) {
-			dropArmor();
-			this.transformCounter = 1;
-		}
-	}
-
+	
 	@Override
-	public void performAnimation(int animationType) {
-		if (animationType >= 5 && animationType < 9) //transform 5 - 8
-		{
-			this.transformType = animationType;
-			this.transformCounter = 1;
-		}
-
+	public boolean isSitting() {
+		return sit.isSitting();
 	}
-
-	@Override
-	public void onLivingUpdate() {
-		super.onLivingUpdate();
-
-		if (getIsTamed() && !this.world.isRemote && (this.rand.nextInt(300) == 0) && (getHealth() <= getMaxHealth()) && (this.deathTime == 0)) {
-			this.setHealth(getHealth() + 1);
-		}
-
-		if (!this.world.isRemote) {
-			//ostrich buckle!
-			if (getType() == 8 && (this.sprintCounter > 0 && this.sprintCounter < 150) && (this.isBeingRidden()) && rand.nextInt(15) == 0) {
-				MoCTools.buckleMobs(this, 2D, this.world);
-			}
-
-			if (getHiding()) {
-				//wild shy ostriches will hide their heads only for a short term
-				//tamed ostriches will keep their heads hidden until the whip is used again
-				if (++this.hidingCounter > 500 && !getIsTamed()) {
-					setHiding(false);
-					this.hidingCounter = 0;
-				}
-
-			}
-
-			if (getType() == 1 && (this.rand.nextInt(200) == 0)) {
-				//when is chick and becomes adult, change over to different type
-				setEdad(getEdad() + 1);
-				if (getEdad() >= 100) {
-					setAdult(true);
-					setType(0);
-					selectType();
-				}
-			}
-
-			//egg laying
-			if (this.canLayEggs && (getType() == 2) && !getEggWatching() && --this.eggCounter <= 0 && this.rand.nextInt(5) == 0)// &&
-			{
-				EntityPlayer entityplayer1 = this.world.getClosestPlayerToEntity(this, 12D);
-				if (entityplayer1 != null) {
-					double distP = MoCTools.getSqDistanceTo(entityplayer1, this.posX, this.posY, this.posZ);
-					if (distP < 10D) {
-						int OstrichEggType = 30;
-						EntityOstrich maleOstrich = getClosestMaleOstrich(this, 8D);
-						if (maleOstrich != null && this.rand.nextInt(100) < MoCreatures.proxy.ostrichEggDropChance) {
-							MoCEntityEgg entityegg = new MoCEntityEgg(this.world, OstrichEggType);
-							entityegg.setPosition(this.posX, this.posY, this.posZ);
-							this.world.spawnEntity(entityegg);
-
-							if (!this.getIsTamed()) {
-								setEggWatching(true);
-								if (maleOstrich != null) {
-									maleOstrich.setEggWatching(true);
-								}
-								openMouth();
-							}
-
-							//TODO change sound
-							MoCTools.playCustomSound(this, SoundEvents.ENTITY_CHICKEN_EGG);
-							//finds a male and makes it eggWatch as well
-							//MoCEntityOstrich entityOstrich = (MoCEntityOstrich) getClosestSpecificEntity(this, MoCEntityOstrich.class, 12D);
-							this.eggCounter = this.rand.nextInt(2000) + 2000;
-							this.canLayEggs = false;
-						}
-					}
-				}
-			}
-
-			//egg protection
-			if (getEggWatching()) {
-				//look for and protect eggs and move close
-				MoCEntityEgg myEgg = (MoCEntityEgg) getBoogey(8D);
-				if ((myEgg != null) && (MoCTools.getSqDistanceTo(myEgg, this.posX, this.posY, this.posZ) > 4D)) {
-					Path pathentity = this.navigator.getPathToPos(myEgg.getPosition());
-					this.navigator.setPath(pathentity, 16F);
-				}
-				if (myEgg == null) //didn't find egg
-				{
-					setEggWatching(false);
-
-					EntityPlayer eggStealer = this.world.getClosestPlayerToEntity(this, 10D);
-					if (eggStealer != null) {
-						this.world.getDifficulty();
-						if (!getIsTamed() && this.world.getDifficulty() != EnumDifficulty.PEACEFUL) {
-							setAttackTarget(eggStealer);
-							flapWings();
-						}
-					}
-				}
-			}
-		}
+	
+	public void setSitting(boolean sitting) {
+		sit.setSitting(sitting);
 	}
-
-	protected EntityOstrich getClosestMaleOstrich(Entity entity, double d) {
-		double d1 = -1D;
-		EntityOstrich entityliving = null;
-		List<Entity> list = this.world.getEntitiesWithinAABBExcludingEntity(entity, entity.getEntityBoundingBox().expand(d, d, d));
-		for (int i = 0; i < list.size(); i++) {
-			Entity entity1 = list.get(i);
-			if (!(entity1 instanceof EntityOstrich) || ((entity1 instanceof EntityOstrich) && ((EntityOstrich) entity1).getType() < 3)) {
-				continue;
-			}
-
-			double d2 = entity1.getDistanceSq(entity.posX, entity.posY, entity.posZ);
-			if (((d < 0.0D) || (d2 < (d * d))) && ((d1 == -1D) || (d2 < d1))) {
-				d1 = d2;
-				entityliving = (EntityOstrich) entity1;
-			}
-		}
-
-		return entityliving;
+	
+	public boolean getHiding() {
+		return isSitting();
 	}
-
-	@Override
-	public boolean entitiesToInclude(Entity entity) {
-		return ((entity instanceof MoCEntityEgg) && (((MoCEntityEgg) entity).eggType == 30));
+	
+	
+	////////////////////////////////////////////////////////////////
+	//Chest
+	////////////////////////////////////////////////////////////////
+	
+	////////////////////////////////////////////////////////////////
+	// Chest
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentChest chest;
+	
+	public boolean isChested() {
+		return chest.isChested();
 	}
-
-	@Override
-	public boolean processInteract(EntityPlayer player, EnumHand hand) {
-		final Boolean tameResult = this.processTameInteract(player, hand);
-		if (tameResult != null) {
-			return tameResult;
-		}
-
-		final ItemStack stack = player.getHeldItem(hand);
-		if (getIsTamed() && (getType() > 1) && !stack.isEmpty() && !getIsRideable()
-				&& (stack.getItem() == Items.SADDLE)) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, ItemStack.EMPTY);
-			}
-			MoCTools.playCustomSound(this, SoundEvents.ENTITY_CHICKEN_EGG);
-			setRideable(true);
-			return true;
-		}
-
-		if (!getIsTamed() && !stack.isEmpty() && getType() == 2 && stack.getItem() == Items.MELON_SEEDS) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, ItemStack.EMPTY);
-			}
-
-			openMouth();
-			MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_EATING);
-			this.canLayEggs = true;
-			return true;
-		}
-
-		//makes the ostrich stay by hiding their heads
-		if (!stack.isEmpty() && (stack.getItem() == MoCItems.whip) && getIsTamed() && (!this.isBeingRidden())) {
-			setHiding(!getHiding());
-			return true;
-		}
-
-		if (getIsTamed() && getIsChested() && (getType() > 1) && !stack.isEmpty() && stack.getItem() == Item.getItemFromBlock(Blocks.WOOL)) {
-			int colorInt = (stack.getItemDamage());
-			if (colorInt == 0) {
-				colorInt = 16;
-			}
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, ItemStack.EMPTY);
-			}
-			MoCTools.playCustomSound(this, SoundEvents.ENTITY_CHICKEN_EGG);
-			dropFlag();
-			setFlagColor((byte) colorInt);
-			return true;
-		}
-
-		if (!stack.isEmpty() && (getType() > 1) && getIsTamed() && !getIsChested() && (stack.getItem() == Item.getItemFromBlock(Blocks.CHEST))) {
-			stack.shrink(1);
-			if (stack.isEmpty()) {
-				player.setHeldItem(hand, ItemStack.EMPTY);
-			}
-
-			//entityplayer.inventory.addItemStackToInventory(new ItemStack(MoCreatures.key));
-			setIsChested(true);
-			MoCTools.playCustomSound(this, SoundEvents.ENTITY_CHICKEN_EGG);
-			return true;
-		}
-
-		if (player.isSneaking() && getIsChested()) {
-			// if first time opening a chest, we must initialize it
-			if (this.localchest == null) {
-				this.localchest = new MoCAnimalChest("OstrichChest", 9);
-			}
-			if (!this.world.isRemote) {
-				player.displayGUIChest(this.localchest);
-			}
-			return true;
-		}
-
-		if (getIsTamed() && (getType() > 1) && !stack.isEmpty()) {
-
-			Item item = stack.getItem();
-			if (item instanceof ItemArmor && ((ItemArmor) item).armorType == EntityEquipmentSlot.HEAD) {
-				final ItemArmor itemArmor = (ItemArmor) stack.getItem();
-				byte helmetType = 0;
-				if (stack.getItem() == Items.LEATHER_HELMET) {
-					helmetType = 1;
-				} else if (stack.getItem() == Items.IRON_HELMET) {
-					helmetType = 2;
-				} else if (stack.getItem() == Items.GOLDEN_HELMET) {
-					helmetType = 3;
-				} else if (stack.getItem() == Items.DIAMOND_HELMET) {
-					helmetType = 4;
-				} else if (stack.getItem() == MoCItems.helmetHide) {
-					helmetType = 5;
-				} else if (stack.getItem() == MoCItems.helmetFur) {
-					helmetType = 6;
-				} else if (stack.getItem() == MoCItems.helmetCroc) {
-					helmetType = 7;
-				}
-
-				if (helmetType != 0) {
-					player.setHeldItem(hand, ItemStack.EMPTY);
-					dropArmor();
-					this.setItemStackToSlot(itemArmor.armorType, stack);
-					MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_ARMOR_OFF);
-					setHelmet(helmetType);
-					return true;
-				}
-			}
-		}
-		if (this.getIsRideable() && this.getIsAdult() && (!this.getIsChested() || !player.isSneaking()) && !this.isBeingRidden()) {
-			if (!this.world.isRemote && player.startRiding(this)) {
-				player.rotationYaw = this.rotationYaw;
-				player.rotationPitch = this.rotationPitch;
-				setHiding(false);
-			}
-
-			return true;
-		}
-
-		return super.processInteract(player, hand);
-	}
-
-	/**
-	 * Drops a block of the color of the flag if carrying one
-	 */
-	private void dropFlag() {
-		if (!this.world.isRemote && getFlagColor() != 0) {
-			int color = getFlagColor();
-			if (color == 16) {
-				color = 0;
-			}
-			EntityItem entityitem = new EntityItem(this.world, this.posX, this.posY, this.posZ, new ItemStack(Blocks.WOOL, 1, color));
-			entityitem.setPickupDelay(10);
-			this.world.spawnEntity(entityitem);
-			setFlagColor((byte) 0);
-		}
-	}
-
-	private void openMouth() {
-		this.mouthCounter = 1;
-	}
-
-	private void flapWings() {
-		this.wingCounter = 1;
-	}
-
+	
+	
+	
+	////////////////////////////////////////////////////////////////
+	//
+	//--CLIENT SIDE--
+	//
+	////////////////////////////////////////////////////////////////
+	
+	////////////////////////////////////////////////////////////////
+	//Sounds
+	////////////////////////////////////////////////////////////////
+	
 	@Override
 	protected SoundEvent getHurtSound(DamageSource source) {
 		openMouth();
 		return MoCSoundEvents.ENTITY_OSTRICH_HURT;
 	}
-
+	
 	@Override
 	protected SoundEvent getAmbientSound() {
 		openMouth();
-		if (getType() == 1) {
-			return MoCSoundEvents.ENTITY_OSTRICH_AMBIENT_BABY;
-		}
-
-		return MoCSoundEvents.ENTITY_OSTRICH_AMBIENT;
+		return isAdult() ? MoCSoundEvents.ENTITY_OSTRICH_AMBIENT : MoCSoundEvents.ENTITY_OSTRICH_AMBIENT_BABY;
 	}
-
+	
 	@Override
 	protected SoundEvent getDeathSound() {
 		openMouth();
 		return MoCSoundEvents.ENTITY_OSTRICH_DEATH;
 	}
-
-	@Override
-	protected Item getDropItem() {
-		return Items.FEATHER;
+	
+	
+	////////////////////////////////////////////////////////////////
+	//Animations
+	////////////////////////////////////////////////////////////////
+	
+	public int mouthCounter;
+	public int wingCounter;
+	public int jumpCounter;
+	
+	
+	protected void updateAnimations() {
+		if (mouthCounter > 0 && ++mouthCounter > 20) {
+			mouthCounter = 0;
+		}
+		
+		if (wingCounter > 0 && ++wingCounter > 80) {
+			wingCounter = 0;
+		}
+		
+		if (jumpCounter > 0 && ++jumpCounter > 8) {
+			jumpCounter = 0;
+		}
 	}
-
+	
+	private void openMouth() {
+		mouthCounter = 1;
+	}
+	
+	private void flapWings() {
+		wingCounter = 1;
+	}
+	
+	
+	////////////////////////////////////////////////////////////////
+	//Rendering
+	////////////////////////////////////////////////////////////////
+	
 	@Override
-	public void readEntityFromNBT(NBTTagCompound nbttagcompound) {
-		super.readEntityFromNBT(nbttagcompound);
-		setRideable(nbttagcompound.getBoolean("Saddle"));
-		setEggWatching(nbttagcompound.getBoolean("EggWatch"));
-		setHiding(nbttagcompound.getBoolean("Hiding"));
-		setHelmet(nbttagcompound.getInteger("Helmet"));
-		setFlagColor(nbttagcompound.getInteger("FlagColor"));
-		setIsChested(nbttagcompound.getBoolean("Bagged"));
-		if (getIsChested()) {
-			NBTTagList nbttaglist = nbttagcompound.getTagList("Items", 10);
-			this.localchest = new MoCAnimalChest("OstrichChest", 18);
-			for (int i = 0; i < nbttaglist.tagCount(); i++) {
-				NBTTagCompound nbttagcompound1 = nbttaglist.getCompoundTagAt(i);
-				int j = nbttagcompound1.getByte("Slot") & 0xff;
-				if ((j >= 0) && j < this.localchest.getSizeInventory()) {
-					this.localchest.setInventorySlotContents(j, new ItemStack(nbttagcompound1));
+	public ResourceLocation getTexture() {
+		if(!isAdult()) {
+			return MoCreatures.proxy.getTexture("ostrichc.png");
+		}
+		return MoCreatures.proxy.getTexture(getGender() == Gender.Male ? "ostricha.png" : "ostrichb.png");
+	}
+	
+	@Override
+	public float rollRotationOffset() {
+		return 0;
+	}
+	
+	@Override
+	public float pitchRotationOffset() {
+		return 0;
+	}
+	
+	@Override
+	public float yawRotationOffset() {
+		return 0;
+	}
+	
+	@Override
+	public float getSizeFactor() {
+		return getGender() == Gender.Male ? 1.3f : 1.1f; 
+	}
+	
+	
+	
+	////////////////////////////////////////////////////////////////
+	//
+	//--OSTRICH SPECIFIC--
+	//
+	////////////////////////////////////////////////////////////////
+	
+	////////////////////////////////////////////////////////////////
+	// Flag
+	////////////////////////////////////////////////////////////////
+	
+	public boolean flagInteraction(EntityPlayer player, EnumHand hand, ItemStack stack) {
+		
+		if (isTamed() && isChested() && isAdult() && !stack.isEmpty() && stack.getItem() == Item.getItemFromBlock(Blocks.WOOL)) {
+			int colorInt = stack.getItemDamage();
+			consumeItemFromStack(player, stack);
+			MoCTools.playCustomSound(this, SoundEvents.ENTITY_CHICKEN_EGG);
+			dropFlag();
+			setFlagColor((byte) colorInt);
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public int getFlagColor() {
+		return dataManager.get(FLAG_COLOR).intValue();
+	}
+	
+	public void setFlagColor(int i) {
+		dataManager.set(FLAG_COLOR, Byte.valueOf((byte) i));
+	}
+	
+	/**
+	 * Drops a block of the color of the flag if carrying one
+	 */
+	private void dropFlag() {
+		if (!world.isRemote && getFlagColor() != -1) {
+			int color = getFlagColor();
+			EntityItem entityitem = new EntityItem(world, posX, posY, posZ, new ItemStack(Blocks.WOOL, 1, color));
+			entityitem.setPickupDelay(10);
+			world.spawnEntity(entityitem);
+			setFlagColor((byte) -1);
+		}
+	}
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Egg Laying
+	////////////////////////////////////////////////////////////////
+	
+	private static final DataParameter<Boolean> EGG_WATCH = EntityDataManager.<Boolean>createKey(EntityOstrich.class, DataSerializers.BOOLEAN);
+	private int eggCounter;
+	public boolean canLayEggs;
+	
+	public void updateEggWatching() {
+		
+		//egg laying
+		if (canLayEggs && isAdult() && (getGender() == Gender.Female) && !isEggWatching() && --eggCounter <= 0 && rand.nextInt(5) == 0) {
+			EntityPlayer entityplayer1 = world.getClosestPlayerToEntity(this, 12.0);
+			if (entityplayer1 != null) {
+				double distP = MoCTools.getSqDistanceTo(entityplayer1, posX, posY, posZ);
+				if (distP < 10D) {
+					int OstrichEggType = 30;
+					EntityOstrich maleOstrich = getClosestMaleOstrich(this, 8.0);
+					if (maleOstrich != null && rand.nextInt(100) < MoCreatures.proxy.ostrichEggDropChance) {
+						MoCEntityEgg entityegg = new MoCEntityEgg(world, OstrichEggType);
+						entityegg.setPosition(posX, posY, posZ);
+						world.spawnEntity(entityegg);
+						
+						if (!isTamed()) {
+							setEggWatching(true);
+							if (maleOstrich != null) {
+								maleOstrich.setEggWatching(true);
+							}
+							openMouth();
+						}
+						
+						//TODO change sound
+						MoCTools.playCustomSound(this, SoundEvents.ENTITY_CHICKEN_EGG);
+						//finds a male and makes it eggWatch as well
+						//MoCEntityOstrich entityOstrich = (MoCEntityOstrich) getClosestSpecificEntity(this, MoCEntityOstrich.class, 12D);
+						eggCounter = rand.nextInt(2000) + 2000;
+						canLayEggs = false;
+					}
+				}
+			}
+		}
+		
+		
+		//egg protection
+		if (isEggWatching()) {
+			//look for and protect eggs and move close
+			MoCEntityEgg myEgg = (MoCEntityEgg) Util.getAnyLivingEntity(this, 8.0, EntityOstrich::ostrichEggFilter);
+			if (myEgg != null) {// There's an egg
+				if (MoCTools.getSqDistanceTo(myEgg, posX, posY, posZ) > 4.0) { // But it's too far away to protect it
+					navigator.setPath(navigator.getPathToPos(myEgg.getPosition()), 16.0f); //So move closer to it
+				}
+			} else { // didn't find egg.  It was there before so it must have been taken
+				setEggWatching(false);
+				
+				EntityPlayer eggStealer = world.getClosestPlayerToEntity(this, 10.0);
+				if (eggStealer != null) {
+					if (!isTamed() && world.getDifficulty() != EnumDifficulty.PEACEFUL) {
+						setAttackTarget(eggStealer);
+						flapWings();
+					}
 				}
 			}
 		}
 	}
-
-	@Override
-	public void writeEntityToNBT(NBTTagCompound nbttagcompound) {
-		super.writeEntityToNBT(nbttagcompound);
-		nbttagcompound.setBoolean("Saddle", getIsRideable());
-		nbttagcompound.setBoolean("EggWatch", getEggWatching());
-		nbttagcompound.setBoolean("Hiding", getHiding());
-		nbttagcompound.setInteger("Helmet", getHelmet());
-		nbttagcompound.setInteger("FlagColor", getFlagColor());
-		nbttagcompound.setBoolean("Bagged", getIsChested());
-
-		if (getIsChested() && this.localchest != null) {
-			NBTTagList nbttaglist = new NBTTagList();
-			for (int i = 0; i < this.localchest.getSizeInventory(); i++) {
-				this.localstack = this.localchest.getStackInSlot(i);
-				if (this.localstack != null && !this.localstack.isEmpty()) {
-					NBTTagCompound nbttagcompound1 = new NBTTagCompound();
-					nbttagcompound1.setByte("Slot", (byte) i);
-					this.localstack.writeToNBT(nbttagcompound1);
-					nbttaglist.appendTag(nbttagcompound1);
+	
+	public boolean isEggWatching() {
+		return dataManager.get(EGG_WATCH).booleanValue();
+	}
+	
+	public void setEggWatching(boolean flag) {
+		dataManager.set(EGG_WATCH, Boolean.valueOf(flag));
+	}
+	
+	public boolean eggLayingInteraction(EntityPlayer player, EnumHand hand, ItemStack stack) {
+		if (!isTamed() && !stack.isEmpty() && isAdult() && getGender() == Gender.Female && stack.getItem() == Items.MELON_SEEDS) {
+			consumeItemFromStack(player, stack);
+			openMouth();
+			MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_EATING);
+			canLayEggs = true;
+			return true;
+		}
+		return false;
+	}
+	
+	private static boolean adultMaleOstrichFilter(Entity entity) {
+		if(entity instanceof EntityOstrich) {
+			EntityOstrich ostrichFound = (EntityOstrich) entity;
+			return ostrichFound.isAdult() && ostrichFound.isAdult();
+		}
+		return false;
+	}
+	
+	protected EntityOstrich getClosestMaleOstrich(Entity entity, double distance) {
+		double closestDistance = -1.0;
+		EntityOstrich closestOstrich = null;
+		
+		List<Entity> list = world.getEntitiesInAABBexcluding(entity, entity.getEntityBoundingBox().expand(distance, distance, distance), EntityOstrich::adultMaleOstrichFilter);
+		for (int i = 0; i < list.size(); i++) {
+			Entity ostrichFound = list.get(i);
+			
+			double thisDistance = ostrichFound.getDistanceSq(entity.posX, entity.posY, entity.posZ);
+			if (((distance < 0.0) || (thisDistance < (distance * distance))) && ((closestDistance == -1.0) || (thisDistance < closestDistance))) {
+				closestDistance = thisDistance;
+				closestOstrich = (EntityOstrich) ostrichFound;
+			}
+		}
+		
+		return closestOstrich;
+	}
+	
+	private static boolean ostrichEggFilter(Entity entity) {
+		return ((entity instanceof MoCEntityEgg) && (((MoCEntityEgg) entity).eggType == 30));
+	}
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Helmet
+	////////////////////////////////////////////////////////////////
+	
+	public enum OstrichHelmetType {
+		None(0),
+		Leather(1),
+		Iron(2),
+		Golden(3),
+		Diamond(4),
+		Hide(2),
+		Fur(2),
+		Reptile(3);
+		
+		public final int dmgReduction;
+		
+		private static Map<Item, OstrichHelmetType> helmetMap; 
+		
+		private OstrichHelmetType(int dmgReduction) {
+			this.dmgReduction = dmgReduction;
+		}
+		
+		public static OstrichHelmetType fromItem(ItemStack stack) {
+			if(helmetMap == null) {
+				helmetMap = new HashMap<>();
+				helmetMap.put(Items.LEATHER_HELMET, Leather);
+				helmetMap.put(Items.IRON_HELMET, Iron);
+				helmetMap.put(Items.GOLDEN_HELMET, Golden);
+				helmetMap.put(Items.DIAMOND_HELMET, Diamond);
+				helmetMap.put(MoCItems.helmetHide, Hide);
+				helmetMap.put(MoCItems.helmetFur, Fur);
+				helmetMap.put(MoCItems.helmetCroc,Reptile);
+			}
+			
+			return helmetMap.getOrDefault(stack.getItem(), None);
+		}
+		
+	}
+	
+	public OstrichHelmetType getHelmet() {
+		return OstrichHelmetType.fromItem(getItemStackFromSlot(EntityEquipmentSlot.HEAD));
+	}
+	
+	public boolean handleHelmetInteraction(EntityPlayer player, EnumHand hand, ItemStack stack) {
+		
+		if (isTamed() && isAdult() && !stack.isEmpty()) {
+			Item item = stack.getItem();
+			
+			if (item instanceof ItemArmor && ((ItemArmor) item).armorType == EntityEquipmentSlot.HEAD) {
+				final ItemArmor itemArmor = (ItemArmor) stack.getItem();
+				OstrichHelmetType helm = OstrichHelmetType.fromItem(stack);
+				
+				if (helm != OstrichHelmetType.None) {
+					player.setHeldItem(hand, ItemStack.EMPTY);
+					dropHelmet();
+					setItemStackToSlot(itemArmor.armorType, stack);
+					MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_ARMOR_OFF);
+					return true;
 				}
 			}
-			nbttagcompound.setTag("Items", nbttaglist);
 		}
+		
+		return false;
 	}
-
-	@Override
-	public boolean getCanSpawnHere() {
-		//spawns in deserts and plains
-		return getCanSpawnHereCreature() && getCanSpawnHereLiving();
-	}
-
-	@Override
-	public int nameYOffset() {
-		if (getType() > 1) {
-			return -105;
-		} else {
-			return (-5 - getEdad());
-		}
-	}
-
-	/*@Override
-    public boolean updateMount() {
-        return getIsTamed();
-    }*/
-
-	/* @Override
-     public boolean forceUpdates() {
-         return getIsTamed();
-     }*/
-
-	@Override
-	public boolean isMyHealFood(ItemStack par1ItemStack) {
-		return MoCTools.isItemEdible(par1ItemStack.getItem());
-	}
-
-	@Override
-	public void dropMyStuff() {
-		if (!this.world.isRemote) {
-			dropArmor();
-			MoCTools.dropSaddle(this, this.world);
-
-			if (getIsChested()) {
-				MoCTools.dropInventory(this, this.localchest);
-				MoCTools.dropCustomItem(this, this.world, new ItemStack(Blocks.CHEST, 1));
-				setIsChested(false);
-			}
-		}
-
-	}
-
+	
+	
 	/**
 	 * Drops the helmet
 	 */
-	@Override
-	public void dropArmor() {
-		if (!this.world.isRemote) {
-			final ItemStack itemStack = this.getItemStackFromSlot(EntityEquipmentSlot.HEAD);
+	public void dropHelmet() {
+		if (!world.isRemote) {
+			final ItemStack itemStack = getItemStackFromSlot(EntityEquipmentSlot.HEAD);
 			if (!itemStack.isEmpty() && itemStack.getItem() instanceof ItemArmor) {
-				final EntityItem entityitem = new EntityItem(this.world, this.posX, this.posY, this.posZ, itemStack.copy());
-				if (entityitem != null) {
-					entityitem.setPickupDelay(10);
-					this.world.spawnEntity(entityitem);
-				}
+				setItemStackToSlot(EntityEquipmentSlot.HEAD, ItemStack.EMPTY);
+				entityDropItem(itemStack.copy(), 0.0f);
 			}
-			setHelmet((byte) 0);
 		}
 	}
-
-	@Override
-	public boolean isFlyer() {
-		return this.isBeingRidden() && (getType() == 5 || getType() == 6);
-	}
-
-	@Override
-	public void fall(float f, float f1) {
-		if (isFlyer()) {
-			return;
-		}
-		super.fall(f, f1);
-	}
-
-	@Override
-	protected double myFallSpeed() {
-		return 0.89D;
-	}
-
-	@Override
-	protected double flyerThrust() {
-		return 0.8D;
-	}
-
-	@Override
-	protected float flyerFriction() {
-		return 0.96F;
-	}
-
-	@Override
-	protected boolean selfPropelledFlyer() {
-		return getType() == 6;
-	}
-
-	@Override
-	public void makeEntityJump() {
-		if (this.jumpCounter > 5) {
-			this.jumpCounter = 1;
-		}
-		if (this.jumpCounter == 0) {
-			MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_WINGFLAP);
-			this.jumpPending = true;
-			this.jumpCounter = 1;
-		}
-
-	}
-
-	@Override
-	public EnumCreatureAttribute getCreatureAttribute() {
-		if (getType() == 7) {
-			return EnumCreatureAttribute.UNDEAD;
-		}
-		return super.getCreatureAttribute();
-	}
-
-	@Override
-	public int getMaxSpawnedInChunk() {
-		return 1;
-	}
-
-	//TODO 
-	//improve fall flapping wing animation
-	//IMPROVE DIVE CODE
-	//ATTACK!
-	//EGG LYING
-
-	@Override
-	public int getMaxEdad() {
-		return 20;
-	}
+	
 }
