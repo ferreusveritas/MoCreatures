@@ -3,7 +3,7 @@ package com.ferreusveritas.mocreatures.entity.ai;
 import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.entity.IMoCEntity;
 import com.ferreusveritas.mocreatures.entity.MoCEntityAquatic;
-import com.ferreusveritas.mocreatures.entity.aquatic.EntityPredatorMountAquatic;
+import com.ferreusveritas.mocreatures.entity.aquatic.EntityDolphin;
 
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLiving;
@@ -249,8 +249,8 @@ public class EntityAIMoverHelperMoC extends EntityMoveHelper {
 		if(theCreature instanceof IMoCEntity) {
 			divingDepth = ((IMoCEntity) theCreature).getDivingDepth();
 		} else
-		if(theCreature instanceof EntityPredatorMountAquatic) {
-			divingDepth = ((EntityPredatorMountAquatic) theCreature).getDivingDepth();
+		if(theCreature instanceof EntityDolphin) {
+			divingDepth = ((EntityDolphin) theCreature).getDivingDepth();
 		}
 		
 		double delta = distToSurface - divingDepth;

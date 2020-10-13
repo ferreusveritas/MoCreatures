@@ -2,6 +2,7 @@ package com.ferreusveritas.mocreatures.entity.passive;
 
 import com.ferreusveritas.mocreatures.MoCreatures;
 
+import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
@@ -24,7 +25,7 @@ public class EntityPanther extends EntityBigCat {
 	
 	@Override
 	public float calculateMaxHealth() {
-		return 25F;
+		return isAdult() ? 25.0f : 10.0f;
 	}
 	
 	@Override
@@ -48,6 +49,13 @@ public class EntityPanther extends EntityBigCat {
 	@Override
 	public float getMoveSpeed() {
 		return 1.6F;
+	}
+
+	@Override
+	public EntityAgeable createChild(EntityAgeable ageable) {
+		EntityPanther cub = new EntityPanther(world);
+		cub.tame.setOwnerId(getOwnerId());
+		return cub;
 	}
 	
 }

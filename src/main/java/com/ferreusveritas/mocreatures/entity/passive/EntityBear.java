@@ -15,14 +15,16 @@ import com.ferreusveritas.mocreatures.entity.ai.EntityAIOwnableFollowOwner;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIPanicMoC;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
 import com.ferreusveritas.mocreatures.entity.components.ComponentChest;
+import com.ferreusveritas.mocreatures.entity.components.ComponentFeed;
 import com.ferreusveritas.mocreatures.entity.components.ComponentGender;
-import com.ferreusveritas.mocreatures.entity.components.ComponentHealFood;
+import com.ferreusveritas.mocreatures.entity.components.ComponentHeal;
+import com.ferreusveritas.mocreatures.entity.components.ComponentHunger;
 import com.ferreusveritas.mocreatures.entity.components.ComponentLoader;
 import com.ferreusveritas.mocreatures.entity.components.ComponentRide;
 import com.ferreusveritas.mocreatures.entity.components.ComponentStandSit;
+import com.ferreusveritas.mocreatures.entity.components.ComponentStandSit.Posture;
 import com.ferreusveritas.mocreatures.entity.components.ComponentTame;
 import com.ferreusveritas.mocreatures.entity.components.ComponentTameFood;
-import com.ferreusveritas.mocreatures.entity.components.ComponentStandSit.Posture;
 import com.ferreusveritas.mocreatures.init.MoCItems;
 import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
 import com.ferreusveritas.mocreatures.network.MoCMessageHandler;
@@ -30,7 +32,6 @@ import com.ferreusveritas.mocreatures.network.message.MoCMessageAnimation;
 import com.ferreusveritas.mocreatures.util.Util;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIAttackMelee;
@@ -46,16 +47,19 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
+import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.NetworkRegistry.TargetPoint;
 
-public class EntityBear extends EntityAnimalComp implements IGender, ITame, IModelRenderInfo {
+public abstract class EntityBear extends EntityAnimalComp implements IGender, ITame, IModelRenderInfo {
 	
 	public static ComponentLoader<EntityBear> loader = new ComponentLoader<>(
 			animal -> new ComponentTameFood<>(EntityBear.class, animal, (a, s) -> animal.isMyFavoriteFood(s) ),
 			animal -> new ComponentGender<>(EntityBear.class, animal),
+			animal -> new ComponentHeal<>(EntityBear.class, animal, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
+			animal -> new ComponentHunger<>(EntityBear.class, animal, animal.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> animal.isEdible(i) ? Util.healAmount(i) : 0),
+			animal -> new ComponentFeed<>(EntityBear.class, animal, false),
 			animal -> new ComponentRide<>(EntityBear.class, animal),
-			animal -> new ComponentHealFood<>(EntityBear.class, animal, true, (a, s) -> animal.isMyHealFood(s) ? 4: 0),
 			animal -> new ComponentChest<>(EntityBear.class, animal, "BigBearChest"),
 			animal -> new ComponentStandSit<>(EntityBear.class, animal)
 			);
@@ -63,17 +67,15 @@ public class EntityBear extends EntityAnimalComp implements IGender, ITame, IMod
 	public EntityBear(World world) {
 		super(world);
 		setSize(1.2F, 1.5F);
-		if (rand.nextInt(4) == 0) {
-			setGrowingAge(-24000);
-		} else {
-			setGrowingAge(0);
-		}
+		setGrowingAge(rand.nextInt(4) == 0 ? -24000 : 0);
 		stepHeight = 1.0F;
 		
 		tame = getComponent(ComponentTame.class);
 		gender = getComponent(ComponentGender.class);
+		heal = getComponent(ComponentHeal.class);
+		hunger = getComponent(ComponentHunger.class);
+		feed = getComponent(ComponentFeed.class);
 		ride = getComponent(ComponentRide.class);
-		healfood = getComponent(ComponentHealFood.class);
 		chest = getComponent(ComponentChest.class);
 		standSit = getComponent(ComponentStandSit.class);
 	}
@@ -91,7 +93,7 @@ public class EntityBear extends EntityAnimalComp implements IGender, ITame, IMod
 		
 		updateHunting();
 		
-		if(!world.isRemote) {
+		if(isServer()) {
 			
 			updateSitting();
 			
@@ -120,24 +122,20 @@ public class EntityBear extends EntityAnimalComp implements IGender, ITame, IMod
 	
 	@Override
 	public void setupAttributes() {
-		if(getGender() == Gender.None) {
-			setGender(rand.nextInt(2) == 0 ? Gender.Male : Gender.Female); 
-		}
-		
+		gender.resolveGender(rand);
 		getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(calculateMaxHealth());
 		getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(calculateAttackDmg());
 		getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(getFollowRange());
 		getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(getMoveSpeed());
 		setHealth(getMaxHealth());
-		
 		super.setupAttributes();
 	}
 	
 	public float calculateMaxHealth() {
-		return 30;
+		return isAdult() ? 30 : 12;
 	}
 	
-	/** The damage the bear creature */
+	/** The damage the creature is capable of*/
 	public double calculateAttackDmg() {
 		return 5.0;
 	}
@@ -179,59 +177,51 @@ public class EntityBear extends EntityAnimalComp implements IGender, ITame, IMod
 		return isSprinting() ? 0.37F : 0.18F;
 	}
 	
-	
-	////////////////////////////////////////////////////////////////
-	// Movement Special
-	////////////////////////////////////////////////////////////////
-	
+	@Override
 	public boolean isMovementCeased() {
 		return isSitting();
 	}
 	
+	@Override
+	public boolean isNotScared() {
+		return isAdult();
+	}
+	
+	@Override
+	public boolean shouldAttackPlayers() {
+		return !isTamed() && world.getDifficulty() != EnumDifficulty.PEACEFUL;
+	}
+	
 	
 	////////////////////////////////////////////////////////////////
-	// Healing
+	// Movement Special
 	////////////////////////////////////////////////////////////////
 	
 	////////////////////////////////////////////////////////////////
 	// Food
 	////////////////////////////////////////////////////////////////
 	
-	private boolean hasEaten;
-	
-	public void setHasEaten(boolean flag) {
-		hasEaten = flag;
-	}
-	
-	public boolean getHasEaten() {
-		return hasEaten;
-	}
-	
 	protected boolean isEdible(ItemStack stack) {
 		return stack.getItem() instanceof ItemFood;
-	}
-	
-	protected boolean isMyHealFood(ItemStack stack) {
-		return MoCTools.isItemEdibleforCarnivores(stack.getItem());
 	}
 	
 	public boolean isMyFavoriteFood(ItemStack stack) {
 		return stack.getItem() == Items.PUMPKIN_PIE; //TODO: Change to honey using Ore Dictionary
 	}
 	
+	protected int foodNourishment(ItemStack stack) {
+		return Util.healAmount(stack);
+	}
+	
 	protected void seekOutFoodItems() {
-		if (!isCorpse() && !isMovementCeased()) {
-			EntityItem entityitem = Util.getClosestItem(this, 12.0, e -> isEdible(e.getItem()) );
-			if (entityitem != null) {
-				float distance = entityitem.getDistance(this);
+		if ( !isWellFed() && !isCorpse() && !isBeingRidden() && !isMovementCeased() && (!isTamed() || isHungry()) ) {
+			EntityItem edibleItem = Util.getClosestItem(this, 12.0, e -> isEdible(e.getItem()) );
+			if (edibleItem != null) {
+				float distance = edibleItem.getDistance(this);
 				if (distance > 2.0F) {
-					Util.getMyOwnPath(this, entityitem, distance);
-				}
-				if ((distance < 2.0F) && (entityitem != null)) {
-					entityitem.setDead();
-					setHealth(getMaxHealth());
-					setHasEaten(true);
-					MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_EATING);
+					Util.getMyOwnPath(this, edibleItem, distance);
+				} else {
+					feed.feed(edibleItem);
 				}
 			}
 		}
@@ -280,9 +270,7 @@ public class EntityBear extends EntityAnimalComp implements IGender, ITame, IMod
 			if (isRidingOrBeingRiddenBy(entity)) {
 				return true;
 			}
-			if (entity != this && entity instanceof EntityLivingBase) {
-				setAttackTarget((EntityLivingBase) entity);
-			}
+			setAttackTarget(entity);
 			return true;
 		} else {
 			return false;
@@ -296,7 +284,7 @@ public class EntityBear extends EntityAnimalComp implements IGender, ITame, IMod
 	}
 	
 	private void startAttack() {
-		if (!world.isRemote && attackCounter == 0 && getPosture() == Posture.Standing) {
+		if (isServer() && attackCounter == 0 && getPosture() == Posture.Standing) {
 			MoCMessageHandler.INSTANCE.sendToAllAround(new MoCMessageAnimation(getEntityId(), 0),
 					new TargetPoint(world.provider.getDimensionType().getId(), posX, posY, posZ, 64));
 			attackCounter = 1;
@@ -315,18 +303,9 @@ public class EntityBear extends EntityAnimalComp implements IGender, ITame, IMod
 		return 1.5F + (attackCounter / 10F - 10F) * 5F;
 	}
 	
-	public boolean shouldAttackPlayers() {
-		return false;
-	}
-	
 	public boolean isReadyToHunt() {
 		return isAdult() && isNotScared() && !isMovementCeased();
 	}
-	
-	public boolean isNotScared() {
-		return isAdult();
-	}
-	
 	
 	
 	////////////////////////////////////////////////////////////////
@@ -366,17 +345,29 @@ public class EntityBear extends EntityAnimalComp implements IGender, ITame, IMod
 		return 20 * 60 * 20;//20 minutes
 	}
 	
-	@Override
-	public EntityAgeable createChild(EntityAgeable ageable) {
-		return null;
-	}
+	
+	////////////////////////////////////////////////////////////////
+	// Hunger
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentHunger hunger;
+	
+	public boolean isHungry() { return hunger.isHungry(); }
+	public boolean isWellFed() { return hunger.isWellFed(); }
 	
 	
 	////////////////////////////////////////////////////////////////
-	// Heal Food
+	// Healing
 	////////////////////////////////////////////////////////////////
 	
-	protected final ComponentHealFood healfood;
+	protected final ComponentHeal heal;
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Food
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentFeed feed;
 	
 	
 	////////////////////////////////////////////////////////////////

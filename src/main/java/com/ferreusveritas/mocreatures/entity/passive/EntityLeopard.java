@@ -3,6 +3,7 @@ package com.ferreusveritas.mocreatures.entity.passive;
 import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.MoCreatures;
 
+import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
@@ -58,6 +59,7 @@ public class EntityLeopard extends EntityBigCat {
 		return LeopardType.Common;
 	}
 	
+	@Override
 	public ResourceLocation getTexture() {
 		switch (getLeopardType()) {
 			case Snow:
@@ -70,7 +72,7 @@ public class EntityLeopard extends EntityBigCat {
 	
 	@Override
 	public float calculateMaxHealth() {
-		return 25.0f;
+		return isAdult() ? 25.0f : 10.0f;
 	}
 	
 	@Override
@@ -94,6 +96,13 @@ public class EntityLeopard extends EntityBigCat {
 	@Override
 	public float getMoveSpeed() {
 		return 1.6f;
+	}
+	
+	@Override
+	public EntityAgeable createChild(EntityAgeable ageable) {
+		EntityLeopard cub = new EntityLeopard(world);
+		cub.tame.setOwnerId(getOwnerId());
+		return cub;
 	}
 	
 }

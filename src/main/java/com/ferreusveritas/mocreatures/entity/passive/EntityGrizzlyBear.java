@@ -2,6 +2,7 @@ package com.ferreusveritas.mocreatures.entity.passive;
 
 import com.ferreusveritas.mocreatures.MoCreatures;
 
+import net.minecraft.entity.EntityAgeable;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 
@@ -24,9 +25,10 @@ public class EntityGrizzlyBear extends EntityBear{
 	
 	@Override
 	public float calculateMaxHealth() {
-		return 40;
+		return isAdult() ? 40 : 16;
 	}
 	
+	@Override
 	public double getFollowRange() {
 		int factor = 1;
 		if (world.getDifficulty().getDifficultyId() > 1) {
@@ -44,6 +46,13 @@ public class EntityGrizzlyBear extends EntityBear{
 	@Override
 	public boolean shouldAttackPlayers() {
 		return (getBrightness() < 0.4F) && super.shouldAttackPlayers();
+	}
+	
+	@Override
+	public EntityAgeable createChild(EntityAgeable ageable) {
+		EntityGrizzlyBear bearcub = new EntityGrizzlyBear(world);
+		bearcub.tame.setOwnerId(getOwnerId());
+		return bearcub;
 	}
 	
 }

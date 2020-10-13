@@ -3,6 +3,7 @@ package com.ferreusveritas.mocreatures.entity.passive;
 import com.ferreusveritas.mocreatures.MoCreatures;
 import com.ferreusveritas.mocreatures.entity.components.ComponentStandSit.Posture;
 
+import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
@@ -67,8 +68,8 @@ public class EntityPandaBear extends EntityBear {
 	}
 	
 	@Override
-	public boolean isMyHealFood(ItemStack stack) {
-		return isEdible(stack);
+	protected int foodNourishment(ItemStack stack) {
+		return isEdible(stack) ?  2 : 0;
 	}
 	
 	public boolean processInteractFeed(EntityPlayer player, ItemStack stack, EnumHand hand) {
@@ -98,6 +99,13 @@ public class EntityPandaBear extends EntityBear {
 		}
 		
 		super.updateSitting();
+	}
+	
+	@Override
+	public EntityAgeable createChild(EntityAgeable ageable) {
+		EntityPandaBear bearcub = new EntityPandaBear(world);
+		bearcub.tame.setOwnerId(getOwnerId());
+		return bearcub;
 	}
 	
 }

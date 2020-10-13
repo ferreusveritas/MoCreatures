@@ -15,8 +15,10 @@ import com.ferreusveritas.mocreatures.entity.ITame;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIFollowAdult;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
 import com.ferreusveritas.mocreatures.entity.components.ComponentChest;
+import com.ferreusveritas.mocreatures.entity.components.ComponentFeed;
 import com.ferreusveritas.mocreatures.entity.components.ComponentGender;
-import com.ferreusveritas.mocreatures.entity.components.ComponentHealFood;
+import com.ferreusveritas.mocreatures.entity.components.ComponentHeal;
+import com.ferreusveritas.mocreatures.entity.components.ComponentHunger;
 import com.ferreusveritas.mocreatures.entity.components.ComponentLoader;
 import com.ferreusveritas.mocreatures.entity.components.ComponentRide;
 import com.ferreusveritas.mocreatures.entity.components.ComponentSit;
@@ -61,12 +63,14 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	public static ComponentLoader<EntityOstrich> loader = new ComponentLoader<>(
 			animal -> new ComponentTameFood<>(EntityOstrich.class, animal, (a, s) -> s.getItem() == Items.CHICKEN),
 			animal -> new ComponentGender<>(EntityOstrich.class, animal),
+			animal -> new ComponentHeal<>(EntityOstrich.class, animal, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
+			animal -> new ComponentHunger<>(EntityOstrich.class, animal, animal.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> animal.foodNourishment(i) ),
+			animal -> new ComponentFeed<>(EntityOstrich.class, animal, false),
 			animal -> new ComponentRide<>(EntityOstrich.class, animal),
-			animal -> new ComponentHealFood<>(EntityOstrich.class, animal, true, (a, s) -> a.isMyHealFood(s) ? 4 : 0),
 			animal -> new ComponentChest(EntityOstrich.class, animal, "OstrichChest"),
 			animal -> new ComponentSit<>(EntityOstrich.class, animal)
 			);
-
+	
 	
 	private static final DataParameter<Byte> FLAG_COLOR = EntityDataManager.<Byte>createKey(EntityOstrich.class, DataSerializers.BYTE);
 	
@@ -79,8 +83,10 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 		
 		tame = getComponent(ComponentTame.class);
 		gender = getComponent(ComponentGender.class);
+		heal = getComponent(ComponentHeal.class);
+		hunger = getComponent(ComponentHunger.class);
+		feed = getComponent(ComponentFeed.class);
 		ride = getComponent(ComponentRide.class);
-		healfood = getComponent(ComponentHealFood.class);
 		chest = getComponent(ComponentChest.class);
 		sit = getComponent(ComponentSit.class);
 	}
@@ -106,7 +112,7 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 			sprintCounter = 0;
 		}
 		
-		if (!world.isRemote) {
+		if (isServer()) {
 			updateSitting();
 			updateEggWatching();
 		}
@@ -135,10 +141,7 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	
 	@Override
 	public void setupAttributes() {
-		if(getGender() == Gender.None) {
-			setGender(rand.nextInt(2) == 0 ? Gender.Male : Gender.Female); 
-		}
-		
+		gender.resolveGender(rand);
 		getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(calculateMaxHealth());
 		getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(calculateAttackDmg());
 		getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(getFollowRange());
@@ -154,7 +157,7 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	
 	//TODO: Change max health when animals becomes an adult
 	public float calculateMaxHealth() {
-		return 30.0f; 
+		return isAdult() ? ( getGender() == Gender.Male ? 30.0f : 24.0f) : 12.0f; 
 	}
 	
 	/** Returns the distance at which the animal attacks prey */
@@ -180,6 +183,15 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 		tasks.addTask(7, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
 	}
 	
+	@Override
+	public boolean isNotScared() {
+		return isAdult() && getGender() == Gender.Male && getAttackTarget() != null;
+	}
+	
+	public boolean shouldAttackPlayers() {
+		return !isTamed() && world.getDifficulty() != EnumDifficulty.PEACEFUL;
+	}
+	
 	
 	////////////////////////////////////////////////////////////////
 	// Movement Special
@@ -203,6 +215,7 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 		}
 	}
 	
+	@Override
 	public boolean isMovementCeased() {
 		return (getHiding() || isBeingRidden());
 	}
@@ -294,8 +307,8 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 				return false;
 			}
 			
-			if ((entity != this) && shouldAttackPlayers() && isAdult() && getGender() == Gender.Male) {
-				setAttackTarget((EntityLivingBase) entity);
+			if (shouldAttackPlayers() && isAdult() && getGender() == Gender.Male) {
+				setAttackTarget(entity);
 				flapWings();
 			}
 			return true;
@@ -313,14 +326,6 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 		openMouth();
 		flapWings();
 		return super.attackEntityAsMob(entityIn);
-	}
-	
-	public boolean isNotScared() {
-		return isAdult() && getGender() == Gender.Male && getAttackTarget() != null;
-	}
-	
-	public boolean shouldAttackPlayers() {
-		return true;
 	}
 	
 	
@@ -383,15 +388,42 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	
 	@Override
 	public EntityAgeable createChild(EntityAgeable ageable) {
-		return null;
+		EntityOstrich chick = new EntityOstrich(world);
+		chick.tame.setOwnerId(getOwnerId());
+		return chick;
 	}
 	
 	
 	////////////////////////////////////////////////////////////////
-	//Heal Food
+	// Hunger
 	////////////////////////////////////////////////////////////////
 	
-	protected final ComponentHealFood healfood;
+	protected final ComponentHunger hunger;
+	
+	public boolean isHungry() { return hunger.isHungry(); }
+	public boolean isWellFed() { return hunger.isWellFed(); }
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Healing
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentHeal heal;
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Food
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentFeed feed;
+	
+	protected boolean isEdible(ItemStack stack) {
+		return MoCTools.isItemEdible(stack.getItem());
+	}
+	
+	protected int foodNourishment(ItemStack stack) {
+		return isEdible(stack) ?  Util.healAmount(stack) : 0;
+	}
 	
 	
 	////////////////////////////////////////////////////////////////
@@ -628,7 +660,7 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	 * Drops a block of the color of the flag if carrying one
 	 */
 	private void dropFlag() {
-		if (!world.isRemote && getFlagColor() != -1) {
+		if (isServer() && getFlagColor() != -1) {
 			int color = getFlagColor();
 			EntityItem entityitem = new EntityItem(world, posX, posY, posZ, new ItemStack(Blocks.WOOL, 1, color));
 			entityitem.setPickupDelay(10);
@@ -823,7 +855,7 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	 * Drops the helmet
 	 */
 	public void dropHelmet() {
-		if (!world.isRemote) {
+		if (isServer()) {
 			final ItemStack itemStack = getItemStackFromSlot(EntityEquipmentSlot.HEAD);
 			if (!itemStack.isEmpty() && itemStack.getItem() instanceof ItemArmor) {
 				setItemStackToSlot(EntityEquipmentSlot.HEAD, ItemStack.EMPTY);

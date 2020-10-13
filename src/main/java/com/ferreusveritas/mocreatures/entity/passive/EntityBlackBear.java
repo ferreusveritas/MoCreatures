@@ -2,6 +2,7 @@ package com.ferreusveritas.mocreatures.entity.passive;
 
 import com.ferreusveritas.mocreatures.MoCreatures;
 
+import net.minecraft.entity.EntityAgeable;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 
@@ -26,6 +27,7 @@ public class EntityBlackBear extends EntityBear {
 		return 30;
 	}
 	
+	@Override
 	public double getFollowRange() {
 		int factor = 1;
 		if (world.getDifficulty().getDifficultyId() > 1) {
@@ -43,6 +45,13 @@ public class EntityBlackBear extends EntityBear {
 	@Override
 	public boolean shouldAttackPlayers() {
 		return false;
+	}
+	
+	@Override
+	public EntityAgeable createChild(EntityAgeable ageable) {
+		EntityBlackBear bearcub = new EntityBlackBear(world);
+		bearcub.tame.setOwnerId(getOwnerId());
+		return bearcub;
 	}
 	
 }

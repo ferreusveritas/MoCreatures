@@ -4,8 +4,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import com.ferreusveritas.mocreatures.entity.EntityAnimalComp;
 import com.ferreusveritas.mocreatures.entity.IMoCEntity;
-import com.ferreusveritas.mocreatures.entity.passive.EntityPredatorMount;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 
@@ -93,8 +93,8 @@ public class EntityAINearestAttackableTargetMoC extends EntitiAITargetMoC {
 			}
 		}
 
-		if(theAttacker instanceof EntityPredatorMount) {
-			EntityPredatorMount attacker = (EntityPredatorMount)theAttacker;
+		if(theAttacker instanceof EntityAnimalComp) {
+			EntityAnimalComp attacker = (EntityAnimalComp)theAttacker;
 			if (theAttacker != null && (attacker.isMovementCeased() || !attacker.isNotScared())) {
 				return false;
 			}
@@ -117,7 +117,7 @@ public class EntityAINearestAttackableTargetMoC extends EntitiAITargetMoC {
 					if(theAttacker instanceof IMoCEntity && !((IMoCEntity)theAttacker).shouldAttackPlayers()) {
 						return false;
 					}
-					if(theAttacker instanceof EntityPredatorMount && !((EntityPredatorMount)theAttacker).shouldAttackPlayers()) {
+					if(theAttacker instanceof EntityAnimalComp && !((EntityAnimalComp)theAttacker).shouldAttackPlayers()) {
 						return false;
 					}
 				}

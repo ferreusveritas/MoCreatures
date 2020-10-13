@@ -8,9 +8,8 @@ import com.ferreusveritas.mocreatures.entity.EntityAnimalComp;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumHand;
 
-public class ComponentTameFood<T extends EntityAnimalComp> extends ComponentTame<T> {
+public class ComponentTameFood<T extends EntityAnimalComp> extends ComponentTame<T> implements IFeedable {
 	
 	private static class PerClassValues<T> {
 		public final BiFunction<T, ItemStack, Boolean> foodTame;
@@ -34,10 +33,8 @@ public class ComponentTameFood<T extends EntityAnimalComp> extends ComponentTame
 	}
 	
 	@Override
-	protected boolean attemptTaming(EntityPlayer player, EnumHand hand, ItemStack itemStack) {
-		
-		if(values.foodTame != null && values.foodTame.apply(animal, itemStack) ) {
-			consumeItemFromStack(player, itemStack);
+	public boolean feed(EntityPlayer player, ItemStack itemStack) {
+		if(player != null && !isTamed() && values.foodTame != null && values.foodTame.apply(animal, itemStack) ) {
 			if (!animal.world.isRemote) {
 				if (tameChance() && !net.minecraftforge.event.ForgeEventFactory.onAnimalTame(animal, player)) {
 					setTamedBy(player);

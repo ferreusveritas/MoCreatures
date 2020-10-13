@@ -8,7 +8,6 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import com.ferreusveritas.mocreatures.entity.EntityAnimalComp;
-import com.ferreusveritas.mocreatures.entity.IProcessInteract;
 import com.ferreusveritas.mocreatures.entity.ITame;
 import com.google.common.base.Optional;
 
@@ -17,16 +16,14 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.util.EnumHand;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraftforge.common.util.Constants.NBT;
 
-public class ComponentTame<T extends EntityAnimalComp> extends Component<T> implements ITame, IProcessInteract {
+public class ComponentTame<T extends EntityAnimalComp> extends Component<T> implements ITame {
 	
 	private static class PerClassValues {
 		public final DataParameter<Boolean> TAMED;
@@ -89,6 +86,10 @@ public class ComponentTame<T extends EntityAnimalComp> extends Component<T> impl
 		}
 	}
 	
+	public boolean isOwner(EntityPlayer player) {
+		return player.getUniqueID() == getOwnerId();
+	}
+	
 	@Override
 	public void register() {
 		dataManager.register(values.TAMED, false);
@@ -114,20 +115,6 @@ public class ComponentTame<T extends EntityAnimalComp> extends Component<T> impl
 				}
 			}
 		}
-	}
-	
-	@Override
-	public boolean processInteract(EntityPlayer player, EnumHand hand, ItemStack itemStack) {
-		if(!isTamed()) {
-			if(attemptTaming(player, hand, itemStack)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	protected boolean attemptTaming(EntityPlayer player, EnumHand hand, ItemStack itemStack) {
-		return false;
 	}
 	
 	@Override

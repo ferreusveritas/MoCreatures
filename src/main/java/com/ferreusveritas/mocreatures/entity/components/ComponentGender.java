@@ -2,6 +2,7 @@ package com.ferreusveritas.mocreatures.entity.components;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import com.ferreusveritas.mocreatures.entity.EntityAnimalComp;
 import com.ferreusveritas.mocreatures.entity.Gender;
@@ -58,6 +59,12 @@ public class ComponentGender<T extends EntityAnimalComp> extends Component<T> im
 	@Override
 	public void readComponentFromNBT(NBTTagCompound compound) {
 		setGender(Gender.fromByte(compound.getByte("Gender")));
+	}
+	
+	public void resolveGender(Random rand) {
+		if(getGender() == Gender.None) {
+			setGender(rand.nextInt(2) == 0 ? Gender.Male : Gender.Female);
+		}
 	}
 	
 }

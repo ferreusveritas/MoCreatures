@@ -2,6 +2,7 @@ package com.ferreusveritas.mocreatures.entity.passive;
 
 import java.util.UUID;
 
+import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.MoCreatures;
 import com.ferreusveritas.mocreatures.entity.EntityAnimalComp;
 import com.ferreusveritas.mocreatures.entity.Gender;
@@ -13,8 +14,10 @@ import com.ferreusveritas.mocreatures.entity.ai.EntityAIHunt;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAINearestAttackableTargetMoC;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIPanicMoC;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
+import com.ferreusveritas.mocreatures.entity.components.ComponentFeed;
 import com.ferreusveritas.mocreatures.entity.components.ComponentGender;
-import com.ferreusveritas.mocreatures.entity.components.ComponentHealFood;
+import com.ferreusveritas.mocreatures.entity.components.ComponentHeal;
+import com.ferreusveritas.mocreatures.entity.components.ComponentHunger;
 import com.ferreusveritas.mocreatures.entity.components.ComponentLoader;
 import com.ferreusveritas.mocreatures.entity.components.ComponentRide;
 import com.ferreusveritas.mocreatures.entity.components.ComponentSit;
@@ -22,6 +25,7 @@ import com.ferreusveritas.mocreatures.entity.components.ComponentTame;
 import com.ferreusveritas.mocreatures.entity.components.ComponentTameFood;
 import com.ferreusveritas.mocreatures.init.MoCItems;
 import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
+import com.ferreusveritas.mocreatures.util.Util;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityAgeable;
@@ -40,18 +44,20 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.World;
 
 public class EntityKomodo extends EntityAnimalComp implements IGender, ITame, IModelRenderInfo {
 	
 	public static ComponentLoader<EntityKomodo> loader = new ComponentLoader<>(
-			animal -> new ComponentTameFood<EntityKomodo>(EntityKomodo.class, animal, (a, s) -> s.getItem() == Items.CHICKEN),
+			animal -> new ComponentTameFood<>(EntityKomodo.class, animal, (a, s) -> s.getItem() == Items.CHICKEN),
 			animal -> new ComponentGender<>(EntityKomodo.class, animal),
+			animal -> new ComponentHeal<>(EntityKomodo.class, animal, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
+			animal -> new ComponentHunger<>(EntityKomodo.class, animal, animal.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> animal.foodNourishment(i) ),
+			animal -> new ComponentFeed<>(EntityKomodo.class, animal, false),
 			animal -> new ComponentRide<>(EntityKomodo.class, animal),
-			animal -> new ComponentHealFood<EntityKomodo>(EntityKomodo.class, animal, true, (a, s) -> s.getItem() == Items.CHICKEN || s.getItem() == Items.BEEF ? 4: 0),
 			animal -> new ComponentSit<>(EntityKomodo.class, animal)
 			);
-
 	
 	public boolean alerted;
 	
@@ -63,7 +69,9 @@ public class EntityKomodo extends EntityAnimalComp implements IGender, ITame, IM
 		
 		tame = getComponent(ComponentTame.class);
 		gender = getComponent(ComponentGender.class);
-		healfood = getComponent(ComponentHealFood.class);
+		heal = getComponent(ComponentHeal.class);
+		hunger = getComponent(ComponentHunger.class);
+		feed = getComponent(ComponentFeed.class);
 		ride = getComponent(ComponentRide.class);
 		sit = getComponent(ComponentSit.class);
 	}
@@ -151,6 +159,14 @@ public class EntityKomodo extends EntityAnimalComp implements IGender, ITame, IM
 	@Override
 	public float getAIMoveSpeed() {
 		return isSprinting() ? 0.37F : 0.18F;
+	}
+	
+	public boolean isNotScared() {
+		return isAdult();
+	}
+	
+	public boolean shouldAttackPlayers() {
+		return !isTamed() && world.getDifficulty() != EnumDifficulty.PEACEFUL;
 	}
 	
 	
@@ -245,10 +261,6 @@ public class EntityKomodo extends EntityAnimalComp implements IGender, ITame, IM
 		return !(entity instanceof EntityKomodo) && super.canAttackTarget(entity);
 	}
 	
-	public boolean isNotScared() {
-		return isAdult();
-	}
-	
 	public boolean isReadyToHunt() {
 		return isNotScared() && !isMovementCeased() && !isBeingRidden();
 	}
@@ -265,10 +277,6 @@ public class EntityKomodo extends EntityAnimalComp implements IGender, ITame, IM
 	protected void applyEnchantments(EntityLivingBase entityLivingBaseIn, Entity entityIn) {
 		((EntityLivingBase) entityIn).addPotionEffect(new PotionEffect(MobEffects.POISON, 150, 0));
 		super.applyEnchantments(entityLivingBaseIn, entityIn);
-	}
-	
-	public boolean shouldAttackPlayers() {
-		return false;
 	}
 	
 	@Override
@@ -334,15 +342,42 @@ public class EntityKomodo extends EntityAnimalComp implements IGender, ITame, IM
 	
 	@Override
 	public EntityAgeable createChild(EntityAgeable ageable) {
-		return null;
+		EntityKomodo hatchling = new EntityKomodo(world);
+		hatchling.tame.setOwnerId(getOwnerId());
+		return hatchling;
 	}
 	
 	
 	////////////////////////////////////////////////////////////////
-	// Heal Food
+	// Hunger
 	////////////////////////////////////////////////////////////////
 	
-	protected final ComponentHealFood healfood;
+	protected final ComponentHunger hunger;
+	
+	public boolean isHungry() { return hunger.isHungry(); }
+	public boolean isWellFed() { return hunger.isWellFed(); }
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Healing
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentHeal heal;
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Food
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentFeed feed;
+	
+	protected boolean isEdible(ItemStack stack) {
+		return MoCTools.isItemEdibleforCarnivores(stack.getItem());
+	}
+	
+	protected int foodNourishment(ItemStack stack) {
+		return isEdible(stack) ? Util.healAmount(stack) * 2 : 0;
+	}
 	
 	
 	////////////////////////////////////////////////////////////////

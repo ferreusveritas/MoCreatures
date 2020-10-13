@@ -3,6 +3,7 @@ package com.ferreusveritas.mocreatures.entity.passive;
 import com.ferreusveritas.mocreatures.MoCreatures;
 import com.ferreusveritas.mocreatures.entity.Gender;
 
+import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
@@ -58,7 +59,7 @@ public class EntityLion extends EntityBigCat {
 	
 	@Override
 	public float calculateMaxHealth() {
-		return getGender() == Gender.Male ? 35.0f : 30.0f;
+		return isAdult() ? (getGender() == Gender.Male ? 35.0f : 30.0f) : 12.0f;
 	}
 	
 	@Override
@@ -77,6 +78,13 @@ public class EntityLion extends EntityBigCat {
 			return false;
 		}
 		return entity.height < 2F && entity.width < 2F;
+	}
+	
+	@Override
+	public EntityAgeable createChild(EntityAgeable ageable) {
+		EntityLion cub = new EntityLion(world);
+		cub.tame.setOwnerId(getOwnerId());
+		return cub;
 	}
 	
 }

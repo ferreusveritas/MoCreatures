@@ -1,17 +1,21 @@
 package com.ferreusveritas.mocreatures.entity.components;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 import javax.annotation.Nonnull;
 
+import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.entity.EntityAnimalComp;
 import com.ferreusveritas.mocreatures.entity.IProcessInteract;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.MoverType;
 import net.minecraft.entity.SharedMonsterAttributes;
+import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
@@ -19,8 +23,8 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
+import net.minecraft.util.DamageSource;
 import net.minecraft.util.EnumHand;
-import net.minecraft.world.World;
 
 public class ComponentRide<T extends EntityAnimalComp> extends Component<T> implements IProcessInteract {
 	
@@ -45,7 +49,7 @@ public class ComponentRide<T extends EntityAnimalComp> extends Component<T> impl
 		this.values = getValues(clazz);
 	}
 	
-	private ComponentTame tame;
+	protected ComponentTame tame;
 	
 	@Override
 	public void link() {
@@ -75,21 +79,29 @@ public class ComponentRide<T extends EntityAnimalComp> extends Component<T> impl
 		setRideable(compound.getBoolean("Rideable"));
 	}
 	
+	private boolean checkRidingPermission(EntityPlayer player) {
+		return MoCTools.isThisPlayerAnOP(player) || isOwner(player);
+	}
+	
+	protected boolean canBeRiddenByPlayer(EntityPlayer player) {
+		return isTamed() ? checkRidingPermission(player) : true;
+	}
 	
 	@Override
 	public boolean processInteract(EntityPlayer player, EnumHand hand, ItemStack itemStack) {
 		
 		if(animal.isAdult()) {
-			if (!isRideable() && isTame() && (itemStack.getItem() == Items.SADDLE)) {
+			if (!isRideable() && isTamed() && (itemStack.getItem() == Items.SADDLE)) {
 				consumeItemFromStack(player, itemStack);
 				setRideable(true);
 				return true;
 			} else {
-				if(!player.isSneaking()) {
+				if(!player.isSneaking() && canBeRiddenByPlayer(player)) {
 					animal.atAttention();
 					player.rotationYaw = animal.rotationYaw;
 					player.rotationPitch = animal.rotationPitch;
 					player.startRiding(animal);
+					return true;
 				}
 			}
 		}
@@ -102,47 +114,64 @@ public class ComponentRide<T extends EntityAnimalComp> extends Component<T> impl
 		super.dropStuff();
 	}
 	
+	@Override
+	public void onLivingUpdate() {
+		super.onLivingUpdate();
+		
+		if (animal.getRidingEntity() instanceof EntityPlayer) {
+			EntityPlayer entityplayer = (EntityPlayer) animal.getRidingEntity();
+			List<Entity> list = animal.world.getEntitiesWithinAABBExcludingEntity(animal, animal.getEntityBoundingBox().expand(1.0, 0.0, 1.0));
+			for (Entity entity : list) {
+				if (!entity.isDead) {
+					entity.onCollideWithPlayer(entityplayer);
+					if (entity instanceof EntityMob) {
+						if ((animal.getDistance(entity) < 2.0F) && entity instanceof EntityMob && (animal.world.rand.nextInt(10) == 0)) {
+							animal.attackEntityFrom(DamageSource.causeMobDamage((EntityLivingBase) entity),
+									(float) ((EntityMob) entity).getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getAttributeValue());
+						}
+					}
+				}
+			}
+		}
+		
+	}
+	
 	/** Moves the entity based on the specified heading.  Args: strafe, forward */
 	public boolean travel(float strafe, float vertical, float forward) {
 		
 		if (animal.isBeingRidden()) {
 			EntityLivingBase passenger = (EntityLivingBase)animal.getControllingPassenger();
-			if (passenger != null) {
-				return moveWithRider(strafe, vertical, forward, passenger); //riding movement
+			if (passenger instanceof EntityLivingBase) {
+				return isTamed() ? 
+						moveEntityWithRiderTamed(strafe, vertical, forward, passenger) : 
+							moveEntityWithRiderUntamed(strafe, vertical, forward, passenger);
 			}
 		}
-		/*if ((animal.isAmphibian() && animal.isInWater()) || (animal.isFlyer() && getIsFlying()) { //amphibian in water movement
-				animal.moveRelative(strafe, vertical, forward, 0.1F);
-				animal.move(MoverType.SELF, animal.motionX, animal.motionY, animal.motionZ);
-				animal.motionX *= 0.9;
-				animal.motionY *= 0.9;
-				animal.motionZ *= 0.9;
-				if (animal.getAttackTarget() == null) {
-					animal.motionY -= 0.005D;
-				}
-				return true;
-			}*/
+		
 		return false; // regular movement
 	}
 	
-	private boolean isTame() {
+	protected boolean isTamed() {
 		return tame != null && tame.isTamed();
 	}
 	
-	/**
-	 ** Riding Code
-	 * @param strafe
-	 * @param forward
-	 * @param passenger 
-	 */
-	public boolean moveWithRider(float strafe, float vertical, float forward, @Nonnull EntityLivingBase passenger) {
-		
-		return isTame() ? 
-				moveEntityWithRiderTamed(strafe, vertical, forward, passenger) : 
-					moveEntityWithRiderUntamed(strafe, vertical, forward, passenger);
+	protected boolean isOwner(EntityPlayer player) {
+		return isTamed() && tame.isOwner(player);
+	}
+	
+	public void performJump() {
+		if (!animal.isJumping() && animal.isJumpPending()) {
+			animal.motionY += animal.getCustomJump();
+			animal.setJumping(true);
+			animal.setJumpPending(false);
+		}
 	}
 	
 	protected void moveJump() {
+		
+		if (animal.onGround) {
+			animal.setJumping(false);
+		}
 		
 		if (animal.isJumpPending() && !animal.isJumping() && animal.onGround) {
 			animal.motionY += animal.getCustomJump() * (animal.isBeingRidden() ? 2.0 : 1.0);
@@ -150,6 +179,22 @@ public class ComponentRide<T extends EntityAnimalComp> extends Component<T> impl
 			animal.setJumping(true);
 			animal.setJumpPending(false);
 		}
+	}
+	
+	protected void moveDive() {
+		//So it doesn't sink on its own
+		/*if (animal.motionY < 0D && isSwimming()) {
+			animal.motionY = 0D;
+		}*/
+		
+		if (animal.isDivePending()) {
+			animal.setDivePending(false);
+			animal.motionY -= 0.3D;
+		}
+	}
+	
+	protected float strafePenalty() {
+		return 0.5f;
 	}
 	
 	public boolean moveEntityWithRiderTamed(float strafe, float vertical, float forward, @Nonnull EntityLivingBase passenger) {
@@ -162,78 +207,62 @@ public class ComponentRide<T extends EntityAnimalComp> extends Component<T> impl
 			animal.renderYawOffset = animal.rotationYaw;
 			animal.rotationYawHead = animal.renderYawOffset;
 			
-			strafe = (float) (passenger.moveStrafing * 0.5F * animal.getCustomSpeed());
+			strafe = passenger.moveStrafing * strafePenalty() * (float)animal.getCustomSpeed();
 			forward = (float) (passenger.moveForward * animal.getCustomSpeed());
 			
 			moveJump();
-			
-			if (animal.isDivePending()) {
-				animal.setDivePending(false);
-				animal.motionY -= 0.3D;
-			}
+			moveDive();
 			
 			animal.setAIMoveSpeed((float) animal.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue());
-			
 		}
 		
 		animal.superTravel(strafe, vertical, forward);
 		
+		/*
 		animal.setJumping(false);
 		animal.setDivePending(false);
 		animal.setJumpPending(false);
+		*/
 		
 		return true;
 	}
 	
 	public boolean moveEntityWithRiderUntamed(float strafe, float vertical, float forward, EntityLivingBase passenger) {
 		
-		//Riding behavior if untamed
-		
-		World world = animal.world;
-		Random rand = animal.world.rand;
-		
-		if (!world.isRemote) {
+		if (animal.isServer()) {
+			Random rand = animal.world.rand;
 			
-			//moveJump();
-			
+			//Thrash around randomly
 			if (rand.nextInt(5) == 0) {
 				animal.motionX += (rand.nextDouble() - 0.5) / 3.0;
 				animal.motionZ += (rand.nextDouble() - 0.5) / 3.0;
 				animal.velocityChanged = true;
 			}
+			
+			//Jump about randomly
 			if(rand.nextInt(10) == 0) {
+				//Randomly jettison the passenger during a random jump 
 				if (rand.nextInt(5) == 0) {
 					animal.removePassengers();
-					//animal.motionY += 0.25;
 					animal.velocityChanged = true;
 					passenger.addVelocity((rand.nextDouble() - 0.5), 0.6, (rand.nextDouble() - 0.5));
 					passenger.velocityChanged = true;
 					return true;
 				}
-				animal.setJumpPending(true);
+				performJump();
 			}
 			
 			animal.move(MoverType.SELF, animal.motionX, animal.motionY, animal.motionZ);
 			
+			if (passenger instanceof EntityPlayer) {
+				if(tame instanceof ComponentTameTemper) {
+					ComponentTameTemper temperTame = (ComponentTameTemper) tame;
+					temperTame.attemptTaming((EntityPlayer) passenger);
+				}
+			}
 		}
 		
 		moveJump();
-		
-		
-		//animal.setJumping(false);
-		
-		/*
-		 * TODO: Implement temper tame component
-				if (!world.isRemote && this instanceof IMoCTameable && passenger instanceof EntityPlayer) {
-					int chance = (getMaxTemper() - getTemper());
-					if (chance <= 0) {
-						chance = 1;
-					}
-					if (rand.nextInt(chance * 8) == 0) {
-						MoCTools.tameWithName((EntityPlayer) passenger, (IMoCTameable) this);
-					}
-				}
-		 */
 		
 		return false;
 	}

@@ -15,8 +15,10 @@ import com.ferreusveritas.mocreatures.entity.ai.EntityAINearestAttackableTargetM
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIOwnableFollowOwner;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
 import com.ferreusveritas.mocreatures.entity.components.ComponentChest;
+import com.ferreusveritas.mocreatures.entity.components.ComponentFeed;
 import com.ferreusveritas.mocreatures.entity.components.ComponentGender;
-import com.ferreusveritas.mocreatures.entity.components.ComponentHealFood;
+import com.ferreusveritas.mocreatures.entity.components.ComponentHeal;
+import com.ferreusveritas.mocreatures.entity.components.ComponentHunger;
 import com.ferreusveritas.mocreatures.entity.components.ComponentLoader;
 import com.ferreusveritas.mocreatures.entity.components.ComponentRide;
 import com.ferreusveritas.mocreatures.entity.components.ComponentSit;
@@ -31,8 +33,6 @@ import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityAgeable;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIAttackMelee;
 import net.minecraft.entity.ai.EntityAISwimming;
@@ -50,13 +50,15 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.World;
 
-public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IModelRenderInfo {
+public abstract class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IModelRenderInfo {
 	
 	public static ComponentLoader<EntityBigCat> loader = new ComponentLoader<>(
 			animal -> new ComponentTameFood<>(EntityBigCat.class, animal, (a, s) -> s.getItem() == Items.BEEF),
 			animal -> new ComponentGender<>(EntityBigCat.class, animal),
+			animal -> new ComponentHeal<>(EntityBigCat.class, animal, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
+			animal -> new ComponentHunger<>(EntityBigCat.class, animal, animal.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> animal.foodNourishment(i) ),
+			animal -> new ComponentFeed<>(EntityBigCat.class, animal, false),
 			animal -> new ComponentRide<>(EntityBigCat.class, animal),
-			animal -> new ComponentHealFood<>(EntityBigCat.class, animal, true, (a, s) -> s.getItem() == Items.CHICKEN || s.getItem() == Items.BEEF ? 4: 0),
 			animal -> new ComponentChest(EntityBigCat.class, animal, "BigCatChest"),
 			animal -> new ComponentSit<>(EntityBigCat.class, animal)
 			);
@@ -71,8 +73,10 @@ public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IM
 		
 		tame = getComponent(ComponentTame.class);
 		gender = getComponent(ComponentGender.class);
+		heal = getComponent(ComponentHeal.class);
+		hunger = getComponent(ComponentHunger.class);
+		feed = getComponent(ComponentFeed.class);
 		ride = getComponent(ComponentRide.class);
-		healfood = getComponent(ComponentHealFood.class);
 		chest = getComponent(ComponentChest.class);
 		sit = getComponent(ComponentSit.class);
 	}
@@ -86,7 +90,7 @@ public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IM
 	public void onLivingUpdate() {
 		super.onLivingUpdate();
 		
-		if (!world.isRemote) {
+		if (isServer()) {
 			
 			if (isMovementCeased()) {
 				getNavigator().clearPath();
@@ -130,7 +134,7 @@ public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IM
 	}
 	
 	public float calculateMaxHealth() {
-		return 20.0f;
+		return isAdult() ? 20.0f : 10.0f;
 	}
 	
 	public double calculateAttackDmg() {
@@ -178,6 +182,21 @@ public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IM
 		return isSprinting() ? 0.37F : 0.18F;
 	}
 	
+	@Override
+	public boolean isMovementCeased() {
+		return isSitting() || isBeingRidden();
+	}
+	
+	@Override
+	public boolean isNotScared() {
+		return isAdult();
+	}
+	
+	@Override
+	public boolean shouldAttackPlayers() {
+		return !isTamed() && world.getDifficulty() != EnumDifficulty.PEACEFUL;
+	}
+	
 	
 	////////////////////////////////////////////////////////////////
 	// Movement Special
@@ -186,7 +205,7 @@ public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IM
 	@Override
 	public void fall(float f, float f1) {
 		float i = (float) (Math.ceil(f - 3.0f) / 2.0f);
-		if (!world.isRemote && (i > 0)) {
+		if (isServer() && (i > 0)) {
 			i /= 2;
 			if (i > 1F) {
 				attackEntityFrom(DamageSource.FALL, i);
@@ -212,10 +231,6 @@ public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IM
 				);
 	}
 	
-	public boolean isMovementCeased() {
-		return isSitting() || isBeingRidden();
-	}
-	
 	
 	////////////////////////////////////////////////////////////////
 	// Healing
@@ -226,22 +241,12 @@ public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IM
 	// Food
 	////////////////////////////////////////////////////////////////
 	
-	private boolean hasEaten;
-	
-	public void setHasEaten(boolean flag) {
-		hasEaten = flag;
-	}
-	
-	public boolean getHasEaten() {
-		return hasEaten;
-	}
-	
-	protected boolean isMyHealFood(ItemStack stack) {
-		return MoCTools.isItemEdibleforCarnivores(stack.getItem());
-	}
-	
 	protected boolean isEdible(ItemStack stack) {
 		return MoCTools.isItemEdibleforCarnivores(stack.getItem());
+	}
+	
+	protected int foodNourishment(ItemStack stack) {
+		return isEdible(stack) ? Util.healAmount(stack) * 2 : 0;
 	}
 	
 	public boolean isMyFavoriteFood(ItemStack stack) {
@@ -249,18 +254,14 @@ public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IM
 	}
 	
 	protected void seekOutFoodItems() {
-		if (!isCorpse() && !isMovementCeased()) {
-			EntityItem entityitem = Util.getClosestItem(this, 12.0, e -> isEdible(e.getItem()) );
-			if (entityitem != null) {
-				float distance = entityitem.getDistance(this);
+		if ( !isWellFed() && !isCorpse() && !isBeingRidden() && !isMovementCeased() && (!isTamed() || isHungry()) ) {
+			EntityItem edibleItem = Util.getClosestItem(this, 12.0, e -> isEdible(e.getItem()) );
+			if (edibleItem != null) {
+				float distance = edibleItem.getDistance(this);
 				if (distance > 2.0F) {
-					Util.getMyOwnPath(this, entityitem, distance);
-				}
-				if ((distance < 2.0F) && (entityitem != null)) {
-					entityitem.setDead();
-					setHealth(getMaxHealth());
-					setHasEaten(true);
-					MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_EATING);
+					Util.getMyOwnPath(this, edibleItem, distance);
+				} else {
+					feed.feed(edibleItem);
 				}
 			}
 		}
@@ -308,10 +309,6 @@ public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IM
 		
 	}
 	
-	public boolean isNotScared() {
-		return isAdult();
-	}
-	
 	public boolean isReadyToHunt() {
 		return isAdult() && isNotScared() && !isMovementCeased();
 	}
@@ -328,7 +325,7 @@ public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IM
 	@Override
 	public boolean attackEntityFrom(DamageSource damagesource, float i) {
 		Entity entity = damagesource.getTrueSource();
-		if ((this.isBeingRidden()) && (entity == this.getRidingEntity())) {
+		if ((isBeingRidden()) && (entity == getRidingEntity())) {
 			return false;
 		}
 		
@@ -336,8 +333,8 @@ public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IM
 			if (entity != null && isTamed() && entity instanceof EntityPlayer) {
 				return false;
 			}
-			if (entity != this && entity instanceof EntityLivingBase && (this.world.getDifficulty() != EnumDifficulty.PEACEFUL)) {
-				setAttackTarget((EntityLivingBase) entity);
+			if (world.getDifficulty() != EnumDifficulty.PEACEFUL) {
+				setAttackTarget(entity);
 			}
 			return true;
 		} else {
@@ -384,25 +381,29 @@ public class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IM
 		return 20 * 60 * 20;//20 minutes
 	}
 	
-	@Override
-	public EntityBigCat createChild(EntityAgeable ageable) {
-		EntityBigCat entity = new EntityBigCat(world);
-		UUID uuid = getOwnerId();
-		
-		if (uuid != null) {
-			//entity.setOwnerId(uuid);
-			//entity.setTamed(true);
-		}
-		
-		return entity;
-	}
+	
+	////////////////////////////////////////////////////////////////
+	// Hunger
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentHunger hunger;
+	
+	public boolean isHungry() { return hunger.isHungry(); }
+	public boolean isWellFed() { return hunger.isWellFed(); }
 	
 	
 	////////////////////////////////////////////////////////////////
-	// Heal Food
+	// Healing
 	////////////////////////////////////////////////////////////////
 	
-	protected final ComponentHealFood healfood;
+	protected final ComponentHeal heal;
+	
+	
+	////////////////////////////////////////////////////////////////
+	// Food
+	////////////////////////////////////////////////////////////////
+	
+	protected final ComponentFeed feed;
 	
 	
 	////////////////////////////////////////////////////////////////
