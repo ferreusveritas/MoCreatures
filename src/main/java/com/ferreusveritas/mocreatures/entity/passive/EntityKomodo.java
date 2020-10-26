@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.MoCreatures;
+import com.ferreusveritas.mocreatures.entity.Animation;
 import com.ferreusveritas.mocreatures.entity.EntityAnimalComp;
 import com.ferreusveritas.mocreatures.entity.Gender;
 import com.ferreusveritas.mocreatures.entity.IGender;
@@ -22,7 +23,7 @@ import com.ferreusveritas.mocreatures.entity.components.ComponentLoader;
 import com.ferreusveritas.mocreatures.entity.components.ComponentRide;
 import com.ferreusveritas.mocreatures.entity.components.ComponentSit;
 import com.ferreusveritas.mocreatures.entity.components.ComponentTame;
-import com.ferreusveritas.mocreatures.entity.components.ComponentTameFood;
+import com.ferreusveritas.mocreatures.entity.components.Components;
 import com.ferreusveritas.mocreatures.init.MoCItems;
 import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
 import com.ferreusveritas.mocreatures.util.Util;
@@ -49,14 +50,16 @@ import net.minecraft.world.World;
 
 public class EntityKomodo extends EntityAnimalComp implements IGender, ITame, IModelRenderInfo {
 	
+	private static Class thisClass = EntityKomodo.class;
+	
 	public static ComponentLoader<EntityKomodo> loader = new ComponentLoader<>(
-			animal -> new ComponentTameFood<>(EntityKomodo.class, animal, (a, s) -> s.getItem() == Items.CHICKEN),
-			animal -> new ComponentGender<>(EntityKomodo.class, animal),
-			animal -> new ComponentHeal<>(EntityKomodo.class, animal, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
-			animal -> new ComponentHunger<>(EntityKomodo.class, animal, animal.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> animal.foodNourishment(i) ),
-			animal -> new ComponentFeed<>(EntityKomodo.class, animal, false),
-			animal -> new ComponentRide<>(EntityKomodo.class, animal),
-			animal -> new ComponentSit<>(EntityKomodo.class, animal)
+			Components.FoodTame(thisClass, (a, s) -> s.getItem() == Items.CHICKEN),
+			Components.Gender(thisClass),
+			Components.Heal(thisClass, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
+			Components.Hunger(thisClass, a -> a.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> a.foodNourishment(i) ),
+			Components.Feed(thisClass, false),
+			Components.Ride(thisClass),
+			Components.Sit(thisClass)
 			);
 	
 	public boolean alerted;
@@ -468,19 +471,19 @@ public class EntityKomodo extends EntityAnimalComp implements IGender, ITame, IM
 	
 	@Override
 	protected SoundEvent getDeathSound() {
-		openmouth();
+		doAnimation(Animation.openMouth);
 		return MoCSoundEvents.ENTITY_SNAKE_DEATH;
 	}
 	
 	@Override
 	protected SoundEvent getHurtSound(DamageSource source) {
-		openmouth();
+		doAnimation(Animation.openMouth);
 		return MoCSoundEvents.ENTITY_SNAKE_HURT;
 	}
 	
 	@Override
 	protected SoundEvent getAmbientSound() {
-		openmouth();
+		doAnimation(Animation.openMouth);
 		return MoCSoundEvents.ENTITY_SNAKE_AMBIENT;
 	}
 	
@@ -499,21 +502,28 @@ public class EntityKomodo extends EntityAnimalComp implements IGender, ITame, IM
 	public int tongueCounter;
 	public int mouthCounter;
 	
-	private void openmouth() {
-		mouthCounter = 1;
+	@Override
+	public void doAnimation(Animation animation) {
+		switch(animation) {
+			case openMouth: mouthCounter = 1; return;
+			case moveTail: tailCounter = 1; return;
+			case flickTongue: tongueCounter = 1; return;
+			default: return;
+		}
 	}
 	
 	protected void updateAnimations() {
+		
+		if (rand.nextInt(100) == 0) {
+			doAnimation(Animation.moveTail);
+		}
+		
+		if (rand.nextInt(100) == 0) {
+			doAnimation(Animation.flickTongue);
+		}
+
 		if (tailCounter > 0 && ++tailCounter > 60) {
 			tailCounter = 0;
-		}
-		
-		if (rand.nextInt(100) == 0) {
-			tailCounter = 1;
-		}
-		
-		if (rand.nextInt(100) == 0) {
-			tongueCounter = 1;
 		}
 		
 		if (mouthCounter > 0 && ++mouthCounter > 30) {

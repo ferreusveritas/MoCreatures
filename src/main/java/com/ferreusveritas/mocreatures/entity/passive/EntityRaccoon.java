@@ -47,7 +47,7 @@ public class EntityRaccoon extends MoCEntityTameableAnimal {
 		this.tasks.addTask(1, new EntityAISwimming(this));
 		this.tasks.addTask(2, new EntityAIPanicMoC(this, 1.0D));
 		this.tasks.addTask(3, new EntityAIAvoidPlayer(this, 4.0f, 1.0, 1.0));
-		this.tasks.addTask(3, new EntityAIOwnableFollowOwner(this, 0.8D, 2F, 10F));
+		//this.tasks.addTask(3, new EntityAIOwnableFollowOwner(this, 0.8D, 2F, 10F));
 		this.tasks.addTask(4, new EntityAIFollowAdult(this, 1.0D));
 		this.tasks.addTask(5, new EntityAIAttackMelee(this, 1.0D, true));
 		this.tasks.addTask(6, new EntityAIWanderMoC2(this, 1.0D));

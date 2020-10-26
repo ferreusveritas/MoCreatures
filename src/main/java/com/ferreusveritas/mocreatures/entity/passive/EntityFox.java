@@ -52,7 +52,7 @@ public class EntityFox extends MoCEntityTameableAnimal {
 		tasks.addTask(1, new EntityAISwimming(this));
 		tasks.addTask(2, new EntityAIPanicMoC(this, 1.0));
 		tasks.addTask(3, new EntityAIAvoidPlayer(this, 4.0f, 1.0f, 1.0f));
-		tasks.addTask(3, new EntityAIOwnableFollowOwner(this, 0.8, 2F, 10.0f));
+		//tasks.addTask(3, new EntityAIOwnableFollowOwner(this, 0.8, 2F, 10.0f));
 		tasks.addTask(4, new EntityAIFollowAdult(this, 1.0));
 		tasks.addTask(5, new EntityAIAttackMelee(this, 1.0, true));
 		tasks.addTask(6, new EntityAIWanderMoC2(this, 1.0));

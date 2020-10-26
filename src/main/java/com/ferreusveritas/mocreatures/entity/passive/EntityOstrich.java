@@ -1,12 +1,12 @@
 package com.ferreusveritas.mocreatures.entity.passive;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.MoCreatures;
+import com.ferreusveritas.mocreatures.entity.Animation;
 import com.ferreusveritas.mocreatures.entity.EntityAnimalComp;
 import com.ferreusveritas.mocreatures.entity.Gender;
 import com.ferreusveritas.mocreatures.entity.IGender;
@@ -23,8 +23,8 @@ import com.ferreusveritas.mocreatures.entity.components.ComponentLoader;
 import com.ferreusveritas.mocreatures.entity.components.ComponentRide;
 import com.ferreusveritas.mocreatures.entity.components.ComponentSit;
 import com.ferreusveritas.mocreatures.entity.components.ComponentTame;
-import com.ferreusveritas.mocreatures.entity.components.ComponentTameFood;
-import com.ferreusveritas.mocreatures.entity.item.MoCEntityEgg;
+import com.ferreusveritas.mocreatures.entity.components.ComponentWatchfulEggLaying;
+import com.ferreusveritas.mocreatures.entity.components.Components;
 import com.ferreusveritas.mocreatures.init.MoCItems;
 import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
 import com.ferreusveritas.mocreatures.util.Util;
@@ -60,15 +60,18 @@ import net.minecraft.world.World;
 
 public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, IModelRenderInfo {
 	
+	private static Class thisClass = EntityOstrich.class;
+	
 	public static ComponentLoader<EntityOstrich> loader = new ComponentLoader<>(
-			animal -> new ComponentTameFood<>(EntityOstrich.class, animal, (a, s) -> s.getItem() == Items.CHICKEN),
-			animal -> new ComponentGender<>(EntityOstrich.class, animal),
-			animal -> new ComponentHeal<>(EntityOstrich.class, animal, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
-			animal -> new ComponentHunger<>(EntityOstrich.class, animal, animal.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> animal.foodNourishment(i) ),
-			animal -> new ComponentFeed<>(EntityOstrich.class, animal, false),
-			animal -> new ComponentRide<>(EntityOstrich.class, animal),
-			animal -> new ComponentChest(EntityOstrich.class, animal, "OstrichChest"),
-			animal -> new ComponentSit<>(EntityOstrich.class, animal)
+			Components.FoodTame(thisClass, (a, s) -> s.getItem() == Items.PUMPKIN_SEEDS), //TODO: Ostriches aren't supposed to be food tameable
+			Components.Gender(thisClass),
+			Components.Heal(thisClass, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
+			Components.Hunger(thisClass, a -> a.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> a.foodNourishment(i) ),
+			Components.Feed(thisClass, false),
+			Components.WatchfulEggLaying(thisClass, 30),
+			Components.Ride(thisClass),
+			Components.Chest(thisClass, "OstrichChest"),
+			Components.Sit(thisClass)
 			);
 	
 	
@@ -77,15 +80,14 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	public EntityOstrich(World world) {
 		super(world);
 		setSize(1.0F, 1.6F);
-		eggCounter = rand.nextInt(1000) + 1000;
 		stepHeight = 1.0F;
-		canLayEggs = false;
 		
 		tame = getComponent(ComponentTame.class);
 		gender = getComponent(ComponentGender.class);
 		heal = getComponent(ComponentHeal.class);
 		hunger = getComponent(ComponentHunger.class);
 		feed = getComponent(ComponentFeed.class);
+		eggLaying = getComponent(ComponentWatchfulEggLaying.class);
 		ride = getComponent(ComponentRide.class);
 		chest = getComponent(ComponentChest.class);
 		sit = getComponent(ComponentSit.class);
@@ -94,7 +96,6 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	@Override
 	protected void entityInit() {
 		super.entityInit();
-		dataManager.register(EGG_WATCH, Boolean.valueOf(false));
 		dataManager.register(FLAG_COLOR, Byte.valueOf((byte) -1));
 	}
 	
@@ -114,7 +115,6 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 		
 		if (isServer()) {
 			updateSitting();
-			updateEggWatching();
 		}
 	}
 	
@@ -122,7 +122,6 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	public boolean processInteract(EntityPlayer player, EnumHand hand) {
 		final ItemStack stack = player.getHeldItem(hand);
 		return 
-				eggLayingInteraction(player, hand, stack) || 
 				flagInteraction(player, hand, stack) || 
 				handleHelmetInteraction(player, hand, stack) ||
 				super.processInteract(player, hand);
@@ -309,7 +308,7 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 			
 			if (shouldAttackPlayers() && isAdult() && getGender() == Gender.Male) {
 				setAttackTarget(entity);
-				flapWings();
+				doAnimation(Animation.flapWings);
 			}
 			return true;
 		} else {
@@ -323,8 +322,8 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 		if (entityIn instanceof EntityPlayer && !shouldAttackPlayers()) {
 			return false;
 		}
-		openMouth();
-		flapWings();
+		doAnimation(Animation.openMouth);
+		doAnimation(Animation.flapWings);
 		return super.attackEntityAsMob(entityIn);
 	}
 	
@@ -336,14 +335,12 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	@Override
 	public void readEntityFromNBT(NBTTagCompound nbttagcompound) {
 		super.readEntityFromNBT(nbttagcompound);
-		setEggWatching(nbttagcompound.getBoolean("EggWatch"));
 		setFlagColor(nbttagcompound.getByte("FlagColor"));
 	}
 	
 	@Override
 	public void writeEntityToNBT(NBTTagCompound nbttagcompound) {
 		super.writeEntityToNBT(nbttagcompound);
-		nbttagcompound.setBoolean("EggWatch", isEggWatching());
 		nbttagcompound.setByte("FlagColor", (byte) getFlagColor());
 	}
 	
@@ -541,19 +538,19 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	
 	@Override
 	protected SoundEvent getHurtSound(DamageSource source) {
-		openMouth();
+		doAnimation(Animation.openMouth);
 		return MoCSoundEvents.ENTITY_OSTRICH_HURT;
 	}
 	
 	@Override
 	protected SoundEvent getAmbientSound() {
-		openMouth();
+		doAnimation(Animation.openMouth);
 		return isAdult() ? MoCSoundEvents.ENTITY_OSTRICH_AMBIENT : MoCSoundEvents.ENTITY_OSTRICH_AMBIENT_BABY;
 	}
 	
 	@Override
 	protected SoundEvent getDeathSound() {
-		openMouth();
+		doAnimation(Animation.openMouth);
 		return MoCSoundEvents.ENTITY_OSTRICH_DEATH;
 	}
 	
@@ -566,6 +563,14 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	public int wingCounter;
 	public int jumpCounter;
 	
+	@Override
+	public void doAnimation(Animation animation) {
+		switch(animation) {
+			case openMouth: mouthCounter = 1; return;
+			case flapWings: wingCounter = 1; return;
+			default: return;
+		}
+	}
 	
 	protected void updateAnimations() {
 		if (mouthCounter > 0 && ++mouthCounter > 20) {
@@ -579,14 +584,6 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 		if (jumpCounter > 0 && ++jumpCounter > 8) {
 			jumpCounter = 0;
 		}
-	}
-	
-	private void openMouth() {
-		mouthCounter = 1;
-	}
-	
-	private void flapWings() {
-		wingCounter = 1;
 	}
 	
 	
@@ -674,115 +671,7 @@ public class EntityOstrich extends EntityAnimalComp implements IGender, ITame, I
 	// Egg Laying
 	////////////////////////////////////////////////////////////////
 	
-	private static final DataParameter<Boolean> EGG_WATCH = EntityDataManager.<Boolean>createKey(EntityOstrich.class, DataSerializers.BOOLEAN);
-	private int eggCounter;
-	public boolean canLayEggs;
-	
-	public void updateEggWatching() {
-		
-		//egg laying
-		if (canLayEggs && isAdult() && (getGender() == Gender.Female) && !isEggWatching() && --eggCounter <= 0 && rand.nextInt(5) == 0) {
-			EntityPlayer entityplayer1 = world.getClosestPlayerToEntity(this, 12.0);
-			if (entityplayer1 != null) {
-				double distP = MoCTools.getSqDistanceTo(entityplayer1, posX, posY, posZ);
-				if (distP < 10D) {
-					int OstrichEggType = 30;
-					EntityOstrich maleOstrich = getClosestMaleOstrich(this, 8.0);
-					if (maleOstrich != null && rand.nextInt(100) < MoCreatures.proxy.ostrichEggDropChance) {
-						MoCEntityEgg entityegg = new MoCEntityEgg(world, OstrichEggType);
-						entityegg.setPosition(posX, posY, posZ);
-						world.spawnEntity(entityegg);
-						
-						if (!isTamed()) {
-							setEggWatching(true);
-							if (maleOstrich != null) {
-								maleOstrich.setEggWatching(true);
-							}
-							openMouth();
-						}
-						
-						//TODO change sound
-						MoCTools.playCustomSound(this, SoundEvents.ENTITY_CHICKEN_EGG);
-						//finds a male and makes it eggWatch as well
-						//MoCEntityOstrich entityOstrich = (MoCEntityOstrich) getClosestSpecificEntity(this, MoCEntityOstrich.class, 12D);
-						eggCounter = rand.nextInt(2000) + 2000;
-						canLayEggs = false;
-					}
-				}
-			}
-		}
-		
-		
-		//egg protection
-		if (isEggWatching()) {
-			//look for and protect eggs and move close
-			MoCEntityEgg myEgg = (MoCEntityEgg) Util.getAnyLivingEntity(this, 8.0, EntityOstrich::ostrichEggFilter);
-			if (myEgg != null) {// There's an egg
-				if (MoCTools.getSqDistanceTo(myEgg, posX, posY, posZ) > 4.0) { // But it's too far away to protect it
-					navigator.setPath(navigator.getPathToPos(myEgg.getPosition()), 16.0f); //So move closer to it
-				}
-			} else { // didn't find egg.  It was there before so it must have been taken
-				setEggWatching(false);
-				
-				EntityPlayer eggStealer = world.getClosestPlayerToEntity(this, 10.0);
-				if (eggStealer != null) {
-					if (!isTamed() && world.getDifficulty() != EnumDifficulty.PEACEFUL) {
-						setAttackTarget(eggStealer);
-						flapWings();
-					}
-				}
-			}
-		}
-	}
-	
-	public boolean isEggWatching() {
-		return dataManager.get(EGG_WATCH).booleanValue();
-	}
-	
-	public void setEggWatching(boolean flag) {
-		dataManager.set(EGG_WATCH, Boolean.valueOf(flag));
-	}
-	
-	public boolean eggLayingInteraction(EntityPlayer player, EnumHand hand, ItemStack stack) {
-		if (!isTamed() && !stack.isEmpty() && isAdult() && getGender() == Gender.Female && stack.getItem() == Items.MELON_SEEDS) {
-			consumeItemFromStack(player, stack);
-			openMouth();
-			MoCTools.playCustomSound(this, MoCSoundEvents.ENTITY_GENERIC_EATING);
-			canLayEggs = true;
-			return true;
-		}
-		return false;
-	}
-	
-	private static boolean adultMaleOstrichFilter(Entity entity) {
-		if(entity instanceof EntityOstrich) {
-			EntityOstrich ostrichFound = (EntityOstrich) entity;
-			return ostrichFound.isAdult() && ostrichFound.isAdult();
-		}
-		return false;
-	}
-	
-	protected EntityOstrich getClosestMaleOstrich(Entity entity, double distance) {
-		double closestDistance = -1.0;
-		EntityOstrich closestOstrich = null;
-		
-		List<Entity> list = world.getEntitiesInAABBexcluding(entity, entity.getEntityBoundingBox().expand(distance, distance, distance), EntityOstrich::adultMaleOstrichFilter);
-		for (int i = 0; i < list.size(); i++) {
-			Entity ostrichFound = list.get(i);
-			
-			double thisDistance = ostrichFound.getDistanceSq(entity.posX, entity.posY, entity.posZ);
-			if (((distance < 0.0) || (thisDistance < (distance * distance))) && ((closestDistance == -1.0) || (thisDistance < closestDistance))) {
-				closestDistance = thisDistance;
-				closestOstrich = (EntityOstrich) ostrichFound;
-			}
-		}
-		
-		return closestOstrich;
-	}
-	
-	private static boolean ostrichEggFilter(Entity entity) {
-		return ((entity instanceof MoCEntityEgg) && (((MoCEntityEgg) entity).eggType == 30));
-	}
+	protected final ComponentWatchfulEggLaying eggLaying;
 	
 	
 	////////////////////////////////////////////////////////////////

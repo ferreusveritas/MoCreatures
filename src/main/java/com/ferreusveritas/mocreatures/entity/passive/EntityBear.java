@@ -14,6 +14,7 @@ import com.ferreusveritas.mocreatures.entity.ai.EntityAINearestAttackableTargetM
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIOwnableFollowOwner;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIPanicMoC;
 import com.ferreusveritas.mocreatures.entity.ai.EntityAIWanderMoC2;
+import com.ferreusveritas.mocreatures.entity.components.Components;
 import com.ferreusveritas.mocreatures.entity.components.ComponentChest;
 import com.ferreusveritas.mocreatures.entity.components.ComponentFeed;
 import com.ferreusveritas.mocreatures.entity.components.ComponentGender;
@@ -24,7 +25,6 @@ import com.ferreusveritas.mocreatures.entity.components.ComponentRide;
 import com.ferreusveritas.mocreatures.entity.components.ComponentStandSit;
 import com.ferreusveritas.mocreatures.entity.components.ComponentStandSit.Posture;
 import com.ferreusveritas.mocreatures.entity.components.ComponentTame;
-import com.ferreusveritas.mocreatures.entity.components.ComponentTameFood;
 import com.ferreusveritas.mocreatures.init.MoCItems;
 import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
 import com.ferreusveritas.mocreatures.network.MoCMessageHandler;
@@ -53,15 +53,17 @@ import net.minecraftforge.fml.common.network.NetworkRegistry.TargetPoint;
 
 public abstract class EntityBear extends EntityAnimalComp implements IGender, ITame, IModelRenderInfo {
 	
+	private static Class thisClass = EntityBear.class;
+	
 	public static ComponentLoader<EntityBear> loader = new ComponentLoader<>(
-			animal -> new ComponentTameFood<>(EntityBear.class, animal, (a, s) -> animal.isMyFavoriteFood(s) ),
-			animal -> new ComponentGender<>(EntityBear.class, animal),
-			animal -> new ComponentHeal<>(EntityBear.class, animal, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
-			animal -> new ComponentHunger<>(EntityBear.class, animal, animal.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> animal.isEdible(i) ? Util.healAmount(i) : 0),
-			animal -> new ComponentFeed<>(EntityBear.class, animal, false),
-			animal -> new ComponentRide<>(EntityBear.class, animal),
-			animal -> new ComponentChest<>(EntityBear.class, animal, "BigBearChest"),
-			animal -> new ComponentStandSit<>(EntityBear.class, animal)
+			Components.FoodTame(thisClass, (a, s) -> a.isMyFavoriteFood(s)),
+			Components.Gender(thisClass),
+			Components.Heal(thisClass, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
+			Components.Hunger(thisClass, a -> a.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> a.isEdible(i) ? Util.healAmount(i) : 0),
+			Components.Feed(thisClass, false),
+			Components.Ride(thisClass),
+			Components.Chest(thisClass, "BigBearChest"),
+			Components.SitStand(thisClass)
 			);
 	
 	public EntityBear(World world) {

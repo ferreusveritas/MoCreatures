@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import com.ferreusveritas.mocreatures.MoCTools;
 import com.ferreusveritas.mocreatures.MoCreatures;
+import com.ferreusveritas.mocreatures.entity.Animation;
 import com.ferreusveritas.mocreatures.entity.EntityAnimalComp;
 import com.ferreusveritas.mocreatures.entity.Gender;
 import com.ferreusveritas.mocreatures.entity.IGender;
@@ -23,7 +24,7 @@ import com.ferreusveritas.mocreatures.entity.components.ComponentLoader;
 import com.ferreusveritas.mocreatures.entity.components.ComponentRide;
 import com.ferreusveritas.mocreatures.entity.components.ComponentSit;
 import com.ferreusveritas.mocreatures.entity.components.ComponentTame;
-import com.ferreusveritas.mocreatures.entity.components.ComponentTameFood;
+import com.ferreusveritas.mocreatures.entity.components.Components;
 import com.ferreusveritas.mocreatures.init.MoCItems;
 import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
 import com.ferreusveritas.mocreatures.util.Util;
@@ -52,15 +53,17 @@ import net.minecraft.world.World;
 
 public abstract class EntityBigCat extends EntityAnimalComp implements IGender, ITame, IModelRenderInfo {
 	
+	private static Class thisClass = EntityBigCat.class;
+	
 	public static ComponentLoader<EntityBigCat> loader = new ComponentLoader<>(
-			animal -> new ComponentTameFood<>(EntityBigCat.class, animal, (a, s) -> s.getItem() == Items.BEEF),
-			animal -> new ComponentGender<>(EntityBigCat.class, animal),
-			animal -> new ComponentHeal<>(EntityBigCat.class, animal, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
-			animal -> new ComponentHunger<>(EntityBigCat.class, animal, animal.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> animal.foodNourishment(i) ),
-			animal -> new ComponentFeed<>(EntityBigCat.class, animal, false),
-			animal -> new ComponentRide<>(EntityBigCat.class, animal),
-			animal -> new ComponentChest(EntityBigCat.class, animal, "BigCatChest"),
-			animal -> new ComponentSit<>(EntityBigCat.class, animal)
+			Components.FoodTame(thisClass, (a, s) -> s.getItem() == Items.BEEF),
+			Components.Gender(thisClass),
+			Components.Heal(thisClass, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
+			Components.Hunger(thisClass, a -> a.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> a.foodNourishment(i) ),
+			Components.Feed(thisClass, false),
+			Components.Ride(thisClass),
+			Components.Chest(thisClass, "BigCatChest"),
+			Components.Sit(thisClass)
 			);
 	
 	public boolean alerted;
@@ -90,21 +93,22 @@ public abstract class EntityBigCat extends EntityAnimalComp implements IGender, 
 	public void onLivingUpdate() {
 		super.onLivingUpdate();
 		
-		if (isServer()) {
-			
+		updateNavigation();
+		
+		updateAnimations();
+		
+		seekOutFoodItems();
+	}
+	
+	protected void updateNavigation() {
+		if(isServer()) {
 			if (isMovementCeased()) {
 				getNavigator().clearPath();
 			}
-			
 			updateHunting();
-			
 			getNavigator().onUpdateNavigation();
 			setSprinting(getAttackTarget() != null);
-		} else {
-			updateAnimations();
 		}
-		
-		seekOutFoodItems();
 	}
 	
 	
@@ -518,19 +522,19 @@ public abstract class EntityBigCat extends EntityAnimalComp implements IGender, 
 	
 	@Override
 	protected SoundEvent getDeathSound() {
-		openMouth();
+		doAnimation(Animation.openMouth);
 		return isAdult() ? MoCSoundEvents.ENTITY_LION_DEATH : MoCSoundEvents.ENTITY_LION_DEATH_BABY;
 	}
 	
 	@Override
 	protected SoundEvent getHurtSound(DamageSource source) {
-		openMouth();
+		doAnimation(Animation.openMouth);
 		return isAdult() ? MoCSoundEvents.ENTITY_LION_HURT : MoCSoundEvents.ENTITY_LION_HURT_BABY;
 	}
 	
 	@Override
 	protected SoundEvent getAmbientSound() {
-		openMouth();
+		doAnimation(Animation.openMouth);
 		return isAdult() ? MoCSoundEvents.ENTITY_LION_AMBIENT : MoCSoundEvents.ENTITY_LION_AMBIENT_BABY;
 	}
 	
@@ -542,26 +546,29 @@ public abstract class EntityBigCat extends EntityAnimalComp implements IGender, 
 	public int mouthCounter;
 	public int tailCounter;
 	
+	@Override
+	public void doAnimation(Animation animation) {
+		switch(animation) {
+			case openMouth: mouthCounter = 1; return;
+			case moveTail: tailCounter = 1; return;
+			default: return;
+		}
+	}
+	
 	protected void updateAnimations() {
-		if (mouthCounter > 0 && ++mouthCounter > 30) {
-			mouthCounter = 0;
+		if(isClient()) {
+			if (mouthCounter > 0 && ++mouthCounter > 30) {
+				mouthCounter = 0;
+			}
+			
+			if (rand.nextInt(250) == 0) {
+				doAnimation(Animation.moveTail);
+			}
+			
+			if (tailCounter > 0 && ++tailCounter > 10 && rand.nextInt(15) == 0) {
+				tailCounter = 0;
+			}
 		}
-		
-		if (rand.nextInt(250) == 0) {
-			moveTail();
-		}
-		
-		if (tailCounter > 0 && ++tailCounter > 10 && rand.nextInt(15) == 0) {
-			tailCounter = 0;
-		}
-	}
-	
-	private void openMouth() {
-		this.mouthCounter = 1;
-	}
-	
-	private void moveTail() {
-		this.tailCounter = 1;
 	}
 	
 	

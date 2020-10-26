@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import javax.annotation.Nullable;
 
@@ -316,6 +317,9 @@ public abstract class EntityAnimalComp extends EntityAnimal {
 		super.travel(strafe, vertical, forward);
 	}
 	
+	public Random getRand() {
+		return rand;
+	}
 	
 	
 	////////////////////////////////////////////////////////////////
@@ -331,6 +335,9 @@ public abstract class EntityAnimalComp extends EntityAnimal {
 	////////////////////////////////////////////////////////////////
 	// Animations
 	////////////////////////////////////////////////////////////////
+	
+	public void doAnimation(Animation animation) { }
+	
 	
 	////////////////////////////////////////////////////////////////
 	// Rendering

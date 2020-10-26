@@ -20,6 +20,7 @@ import com.ferreusveritas.mocreatures.entity.components.ComponentHunger;
 import com.ferreusveritas.mocreatures.entity.components.ComponentLoader;
 import com.ferreusveritas.mocreatures.entity.components.ComponentRideWater;
 import com.ferreusveritas.mocreatures.entity.components.ComponentTameTemper;
+import com.ferreusveritas.mocreatures.entity.components.Components;
 import com.ferreusveritas.mocreatures.init.MoCSoundEvents;
 import com.ferreusveritas.mocreatures.network.MoCMessageHandler;
 import com.ferreusveritas.mocreatures.network.message.MoCMessageHeart;
@@ -54,14 +55,16 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class EntityDolphin extends EntityAnimalComp implements IModelRenderInfo, ITame, IGender {
 	
+	private static Class thisClass = EntityDolphin.class;
+	
 	public static ComponentLoader<EntityDolphin> loader = new ComponentLoader<>(
-			animal -> new ComponentTameTemper<>(EntityDolphin.class, animal, 50, 100, (a, i) -> animal.isEdible(i) ? 25 : 0),
-			animal -> new ComponentGender<>(EntityDolphin.class, animal),
-			animal -> new ComponentHeal<>(EntityDolphin.class, animal, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
-			animal -> new ComponentHunger<>(EntityDolphin.class, animal, animal.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> animal.foodNourishment(i) ),
-			animal -> new ComponentFeed<>(EntityDolphin.class, animal, false),
-			animal -> new ComponentRideWater<>(EntityDolphin.class, animal)
-			);
+			Components.TemperTame(thisClass, 50, 100, (a, i) -> a.isEdible(i) ? 25 : 0),
+			Components.Gender(thisClass),
+			Components.Heal(thisClass, 0.5f, a -> a.isHungry() ? false : a.world.rand.nextInt(a.isWellFed() ? 100 : 250) == 0),
+			Components.Hunger(thisClass, a -> a.rand.nextFloat() * 6.0f, 12.0f, (a, i) -> a.foodNourishment(i) ),
+			Components.Feed(thisClass, false),
+			Components.WaterRide(thisClass)
+		);
 	
 	public EntityDolphin(World world) {
 		super(world);

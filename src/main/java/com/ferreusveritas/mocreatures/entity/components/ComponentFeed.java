@@ -53,7 +53,7 @@ public class ComponentFeed<T extends EntityAnimalComp> extends Component<T> impl
 	
 	public boolean feed(EntityPlayer player, ItemStack itemStack) {
 		boolean consume = false;
-		if(player == null || (player != null && canPlayerFeed(player))) { 
+		if(player == null || (player != null && canPlayerFeed(player))) {
 			for(Component component : animal.getComponents()) {
 				if(component instanceof IFeedable) {
 					consume |= ((IFeedable)component).feed(player, itemStack);
