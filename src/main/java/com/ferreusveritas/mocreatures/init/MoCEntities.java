@@ -427,8 +427,9 @@ public class MoCEntities {
 			AddAmbient("Crab", EntityCrab.class)
 				.AddSpawn(5, 1, 2, Type.BEACH, Type.OCEAN);
 
-			AddAmbient("Cricket", EntityCricket.class)
-				.AddSpawn(3, 1, 2,
+			
+			AddAmbient("Cricket", EntityCricket.class);
+				/*.AddSpawn(3, 1, 2, //Crickets proved to be very annoying
 					Type.FOREST,
 					Type.HILLS,
 					Type.JUNGLE,
@@ -436,7 +437,7 @@ public class MoCEntities {
 					Type.MOUNTAIN,
 					Type.PLAINS,
 					Type.SWAMP
-				);
+				);*/
 
 			AddAmbient("DragonFly", EntityDragonfly.class)
 				.AddSpawn(5, 1, 2, swamp().or(tropicalIsland().or(duvotica()).and(dead().negate())));
